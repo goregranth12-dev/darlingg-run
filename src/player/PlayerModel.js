@@ -86,6 +86,13 @@ export class PlayerModel {
       arm1 = -2.3;
       lean = -0.05;
       bob = 0;
+    } else if (state === PlayerState.DEAD) {
+      leg0 = 0.6;
+      leg1 = -0.4;
+      arm0 = -2.6;
+      arm1 = -2.2;
+      lean = this.cfg.player.deadLean;
+      bob = 0;
     } else if (state === PlayerState.SLIDING) {
       leg0 = -1.25;
       leg1 = -1.0;
@@ -106,6 +113,13 @@ export class PlayerModel {
     this.scaleY = damp(this.scaleY, scaleTarget, this.cfg.slide.squashDamping, dt);
     this.root.scale.y = this.scaleY;
     this.scarfTail.rotation.x = -0.25 + Math.sin(runPhase * 2) * 0.12;
+  }
+
+  reset() {
+    this.root.rotation.set(0, 0, 0);
+    this.root.scale.set(1, 1, 1);
+    this.body.position.y = 0;
+    this.scaleY = 1;
   }
 
   dispose() {

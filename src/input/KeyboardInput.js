@@ -10,6 +10,7 @@ const KEY_MAP = {
   Space: Action.JUMP,
   KeyS: Action.SLIDE,
   ArrowDown: Action.SLIDE,
+  Enter: Action.TAP,
 };
 
 export class KeyboardInput {

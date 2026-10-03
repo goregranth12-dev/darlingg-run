@@ -11,11 +11,19 @@ export class SwipeInput {
     this.startX = 0;
     this.startY = 0;
     this.startT = 0;
+    this.downX = 0;
+    this.downY = 0;
+    this.downT = 0;
+    this.swiped = false;
 
     this._down = (e) => {
       if (this.pointerId !== -1) return;
       this.pointerId = e.pointerId;
       this._anchor(e.clientX, e.clientY, e.timeStamp);
+      this.downX = e.clientX;
+      this.downY = e.clientY;
+      this.downT = e.timeStamp;
+      this.swiped = false;
       if (target.setPointerCapture) target.setPointerCapture(e.pointerId);
     };
     this._move = (e) => {
@@ -32,10 +40,15 @@ export class SwipeInput {
       if (ax < threshold && ay < threshold) return;
       if (ax > ay) this.push(dx < 0 ? Action.LEFT : Action.RIGHT);
       else this.push(dy < 0 ? Action.JUMP : Action.SLIDE);
+      this.swiped = true;
       this._anchor(e.clientX, e.clientY, e.timeStamp);
     };
     this._up = (e) => {
-      if (e.pointerId === this.pointerId) this.pointerId = -1;
+      if (e.pointerId !== this.pointerId) return;
+      this.pointerId = -1;
+      const dist = Math.hypot(e.clientX - this.downX, e.clientY - this.downY);
+      const quick = e.timeStamp - this.downT <= this.config.swipeMaxTimeMs;
+      if (e.type === 'pointerup' && !this.swiped && quick && dist < this.config.swipeThresholdPx) this.push(Action.TAP);
     };
     this._prevent = (e) => e.preventDefault();
 

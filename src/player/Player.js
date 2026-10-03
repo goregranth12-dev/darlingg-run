@@ -23,12 +23,14 @@ export class Player {
     this.x = this.targetX = this.lanes.xOf(this.lane);
     this.y = 0;
     this.z = 0;
+    this.prevZ = 0;
     this.vy = 0;
     this.speed = this.cfg.player.baseSpeed;
     this.distance = 0;
     this.runPhase = 0;
     this.bumpTimer = 0;
     this.bumpDir = 0;
+    this.model.reset();
     this._sync();
   }
 
@@ -43,7 +45,12 @@ export class Player {
 
   /** Height of the collision volume (used by M2). */
   get height() {
-    return this.cfg.player.standHeight * this.model.scaleY;
+    const s = this.sm.state === PlayerState.SLIDING ? this.cfg.slide.slideHeightScale : 1;
+    return this.cfg.player.standHeight * s;
+  }
+
+  die() {
+    this.sm.die();
   }
 
   handleAction(action) {
@@ -80,6 +87,19 @@ export class Player {
   update(dt) {
     const { player: p, lanes: l, jump: j } = this.cfg;
     const sm = this.sm;
+    this.prevZ = this.z;
+
+    if (!sm.alive) {
+      // crashed: finish any fall, keep animating the stumble
+      if (this.y > 0 || this.vy !== 0) {
+        this.vy -= j.gravity * dt;
+        this.y = Math.max(0, this.y + this.vy * dt);
+        if (this.y === 0) this.vy = 0;
+      }
+      this.model.update(dt, this.runPhase, sm.state, 0);
+      this._sync();
+      return;
+    }
 
     if (sm.alive) {
       this.speed = Math.min(p.maxSpeed, this.speed + p.speedIncreasePerSecond * dt);
@@ -125,6 +145,7 @@ export class Player {
 
   shiftOrigin(dz) {
     this.z += dz;
+    this.prevZ += dz;
     this.group.position.z += dz;
   }
 

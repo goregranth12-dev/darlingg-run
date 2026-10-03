@@ -13,8 +13,11 @@ All art is original procedural placeholder geometry; no external assets.
 `Game` (src/core/Game.js) is the composition root: it owns every system and runs the frame.
 
 Frame order (`Game.update`): input drain -> `Player.update` (speed ramp, lanes, jump/slide) -> origin shift check ->
-`WorldManager.update` (recycle chunks) -> stub managers (obstacles, coins, collision, score) -> `CameraRig` ->
-sky/light follow -> UI. Render happens after update, even while paused.
+`WorldManager.update` (recycle chunks) -> managers in order (obstacles, coins, collision, score) -> `CameraRig` ->
+sky/light follow -> UI. Render happens every frame in every state.
+
+Game states (`Game.state`): `ready` (start screen) -> `running` <-> `paused` (tab hidden) -> `gameover` -> `running` (restart,
+`Game.resetRun()`). Start/restart is any TAP (tap/click/Enter) or JUMP action; restart is locked for `game.restartDelay`.
 
 - `core/`: Config (ALL tunables, deep-frozen), EventBus (sync, 2-arg emit), GameLoop (rAF, dt clamp, FPS),
   Renderer (renderer/scene/camera/lights/resize), CameraRig (chase cam), Game.
@@ -22,8 +25,17 @@ sky/light follow -> UI. Render happens after update, even while paused.
 - `input/`: InputManager (ring-buffer action queue), KeyboardInput, SwipeInput (pointer events), Action enum.
 - `world/`: WorldManager (chunk pool, origin shift, ground), GroundChunk (road + instanced scenery),
   ChunkBuilder (seeded scenery placement), SceneryKit (shared geometry/materials/road texture), LaneSystem, Sky.
-- `obstacles/ collectibles/ collision/ score/ audio/`: stubs with the final public interface (`init/update/shiftOrigin/reset/dispose`).
-- `ui/`: UIManager (minimal), DebugOverlay.
+- `obstacles/`: ObstacleManager (row spawning, pooled records), ObstacleRenderer (instanced meshes, slot pools), ObstacleTypes.
+  Types: LOW (jump over), HIGH (slide under), BLOCK (change lane). Every row has a guaranteed passable "pass lane"
+  (never a BLOCK; consecutive pass lanes differ by <= 1) and rows are >= `gapSeconds.min` apart, so a run is always survivable.
+  Full-width LOW/HIGH "gates" are also generated. Emits `obstacleRow` (reused payload object).
+- `collectibles/`: CoinManager (pooled instanced spinning coins; lays patterns line/step/arc in the gap after each
+  `obstacleRow`), CoinBurst (pooled sparkle Points on pickup).
+- `collision/`: CollisionManager (swept AABB vs obstacles -> `playerHit`; coin pickups -> `coinCollected`).
+  Player collision height is state-based (standing / sliding), see `Player.height`.
+- `score/`: ScoreManager (distance + coins, best score in localStorage under `score.storageKey`).
+- `audio/`: AudioManager is still a stub (M5).
+- `ui/`: UIManager (HUD, start + game-over screens, DOM only), DebugOverlay.
 - `utils/`: ObjectPool, math (clamp/lerp/damp), rng (seeded mulberry32), dispose helpers.
 
 ### World approach
@@ -39,14 +51,14 @@ Any new spawner (obstacles, coins) MUST implement `shiftOrigin(dz)`.
 - Frame-rate independent: use `dt` and `damp()`; `dt` is clamped to `game.maxDeltaTime`.
 - Dispose geometries/materials/textures via `utils/dispose.js`. Shared resources are owned (and disposed) by their kit.
 - Modules talk through direct calls from Game downward and `EventBus` events sideways
-  (`jump slide land laneChange laneBump paused resumed`; reserved: `coinCollected gameOver`).
+  (`jump slide land laneChange laneBump paused resumed obstacleRow playerHit coinCollected gameOver stateChanged`).
 - Dev only: `window.__game` is exposed by `main.js` under `import.meta.env.DEV`.
 - Three.js notes: `PCFSoftShadowMap` was removed in r18x (use `PCFShadowMap`).
 
 ## Roadmap
-- [x] M1 playable core (this)
-- [ ] M2 obstacles (low/high/full-block), pooling, collision, game over + restart
-- [ ] M3 coins + patterns, score, difficulty ramp, coin particles
-- [ ] M4 start screen, HUD, pause, game-over screen, high score (localStorage)
+- [x] M1 playable core
+- [x] M2 obstacles (low/high/full-block), pooling, collision, game over + restart
+- [x] M3 coins + patterns, score, difficulty ramp (speed, row gap, fill), coin particles
+- [x] M4 start screen, HUD, game-over screen, high score (localStorage). Pause is auto-only (tab hidden); no pause menu yet
 - [ ] M5 polish: screen shake, camera effects, materials, audio, post-processing
 - [ ] M6 final original character/environment assets

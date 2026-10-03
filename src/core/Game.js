@@ -13,15 +13,22 @@ import { CollisionManager } from '../collision/CollisionManager.js';
 import { ScoreManager } from '../score/ScoreManager.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { UIManager } from '../ui/UIManager.js';
+import { Action } from '../input/Action.js';
 
-export const GameState = Object.freeze({ RUNNING: 'running', PAUSED: 'paused' });
+export const GameState = Object.freeze({
+  READY: 'ready',
+  RUNNING: 'running',
+  PAUSED: 'paused',
+  GAMEOVER: 'gameover',
+});
 
 // Composition root: owns every system and runs the per-frame update order.
 export class Game {
   constructor(container) {
     this.config = Config;
     this.bus = new EventBus();
-    this.state = GameState.RUNNING;
+    this.state = GameState.READY;
+    this.stateTime = 0;
 
     this.view = new Renderer(container, Config);
     this.lanes = new LaneSystem(Config);
@@ -31,7 +38,7 @@ export class Game {
     this.cameraRig = new CameraRig(this.view.camera, Config);
     this.input = new InputManager(this.view.renderer.domElement, Config);
 
-    // stubs (M2/M3/M5)
+    // gameplay systems (audio is still a stub)
     this.obstacles = new ObstacleManager(Config, this.bus);
     this.coins = new CoinManager(Config, this.bus);
     this.collision = new CollisionManager(Config, this.bus);
@@ -39,23 +46,72 @@ export class Game {
     this.audio = new AudioManager(Config, this.bus);
     this.managers = [this.obstacles, this.coins, this.collision, this.score];
 
-    this.ui = new UIManager(Config, this.bus);
     this.loop = new GameLoop(Config, (dt) => this.frame(dt));
-    this._onAction = (action) => this.player.handleAction(action);
+    this._onAction = (action) => this.handleAction(action);
     this._onVisibility = () => (document.hidden ? this.pause() : this.resume());
     document.addEventListener('visibilitychange', this._onVisibility);
 
-    this.managers.forEach((m) => m.init());
+    this.obstacles.init(this.view.scene, this.lanes);
+    this.coins.init(this.view.scene, this.lanes);
+    this.collision.init(this.obstacles, this.coins);
+    this.score.init();
     this.audio.init();
-    this.world.update(this.player.z);
+    this.ui = new UIManager(Config, this.bus);
+    this.ui.bindScore(this.score);
+    this.bus.on('playerHit', () => this.gameOver());
+
+    this.resetRun();
+    this.setState(GameState.READY);
   }
 
   start() {
     this.loop.start();
   }
 
+  setState(state) {
+    this.state = state;
+    this.stateTime = 0;
+    this.bus.emit('stateChanged', state);
+  }
+
+  /** Puts everything back at the start line (also used for restart). */
+  resetRun() {
+    this.player.reset();
+    this.world.reset();
+    this.managers.forEach((m) => m.reset());
+    this.cameraRig.reset();
+    this.world.update(this.player.z);
+    this.syncPresentation(0);
+    this.input.clear();
+  }
+
+  handleAction(action) {
+    if (this.state === GameState.RUNNING) {
+      this.player.handleAction(action);
+    } else if (action === Action.TAP || action === Action.JUMP) {
+      this.tryStart();
+    }
+  }
+
+  tryStart() {
+    if (this.state === GameState.GAMEOVER) {
+      if (this.stateTime < this.config.game.restartDelay) return;
+      this.resetRun();
+    } else if (this.state !== GameState.READY) {
+      return;
+    }
+    this.setState(GameState.RUNNING);
+  }
+
+  gameOver() {
+    if (this.state !== GameState.RUNNING) return;
+    this.player.die();
+    this.bus.emit('gameOver', this.score.score); // ScoreManager finalises the best first
+    this.setState(GameState.GAMEOVER);
+  }
+
   pause() {
-    if (this.state === GameState.PAUSED) return;
+    if (this.state !== GameState.RUNNING) return;
     this.state = GameState.PAUSED;
     this.input.clear();
     this.bus.emit('paused');
@@ -64,12 +120,19 @@ export class Game {
   resume() {
     if (this.state !== GameState.PAUSED) return;
     this.state = GameState.RUNNING;
+    this.stateTime = 0;
+    this.input.clear();
     this.loop.resetClock();
     this.bus.emit('resumed');
   }
 
   frame(dt) {
+    this.stateTime += dt;
     if (this.state === GameState.RUNNING) this.update(dt);
+    else {
+      if (this.state !== GameState.PAUSED) this.input.drain(this._onAction); // start / restart taps
+      if (this.state === GameState.GAMEOVER) this.updateCrash(dt);
+    }
     this.render();
   }
 
@@ -78,6 +141,7 @@ export class Game {
   update(dt) {
     const player = this.player;
     this.input.drain(this._onAction);
+    if (this.state !== GameState.RUNNING) return; // an action may have changed state
     player.update(dt);
 
     if (-player.z > this.config.world.originShiftThreshold) this.shiftOrigin();
@@ -85,10 +149,22 @@ export class Game {
 
     for (let i = 0; i < this.managers.length; i++) this.managers[i].update(dt, player);
 
+    this.syncPresentation(dt);
+    this.ui.update(dt, this);
+  }
+
+  /** After a crash the world freezes; the runner finishes its stumble. */
+  updateCrash(dt) {
+    this.player.update(dt);
+    this.coins.burst.update(dt);
+    this.syncPresentation(dt);
+  }
+
+  syncPresentation(dt) {
+    const player = this.player;
     this.cameraRig.update(dt, player, player.speedRatio, this.view.aspect);
     this.world.sky.follow(this.view.camera);
     this.view.followLight(player.x, 0, player.z);
-    this.ui.update(dt, this);
   }
 
   /** Re-centres the world near z=0 (whole chunks) so floats stay precise. */

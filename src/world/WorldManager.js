@@ -57,6 +57,16 @@ export class WorldManager {
     this.ground.updateMatrix();
   }
 
+  /** Back to the starting stretch (restart). */
+  reset() {
+    while (this.active.length > 0) {
+      const chunk = this.active.shift();
+      chunk.release();
+      this.pool.release(chunk);
+    }
+    this.baseIndex = 0;
+  }
+
   /** dz must be a positive multiple of chunkLength. */
   shiftOrigin(dz) {
     this.baseIndex += dz / this.config.world.chunkLength;

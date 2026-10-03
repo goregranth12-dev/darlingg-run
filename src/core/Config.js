@@ -15,8 +15,11 @@ export const Config = deepFreeze({
     speedIncreasePerSecond: 0.12, // reaches max after ~170s
     strideRate: 0.55, // run-cycle radians per unit travelled
     bobHeight: 0.07, // vertical run bob
-    standHeight: 2.0, // used by collision in M2
+    standHeight: 2.0, // collision height while running/jumping
+    halfWidth: 0.25, // collision half extents (x / z)
+    halfDepth: 0.3,
     runLean: -0.12, // forward lean (rad)
+    deadLean: -1.35, // how far the runner topples forward after a crash (rad)
     laneLean: 0.05, // roll into lane switches (rad per unit of lateral error)
     poseDamping: 22, // how fast limbs blend between poses
   },
@@ -121,11 +124,57 @@ export const Config = deepFreeze({
   },
 
   obstacles: {
-    // TODO(M2): spawnInterval, minGap, difficultyRamp, variants
+    seed: 0, // 0 = random every run
+    startDistance: 70, // first row this far ahead of the start
+    spawnAhead: 125, // rows spawn this far in front of the player
+    despawnBehind: 14, // and are recycled this far behind
+    poolPerType: 30, // pooled instances per obstacle type
+    gapSeconds: { start: 1.9, min: 1.05 }, // time between rows, shrinks with speed
+    wideGateChance: 0.14, // chance a row is a full-width jump/slide gate
+    passLaneEmptyChance: 0.45, // the guaranteed-passable lane is empty this often
+    fill: { start: 0.5, end: 0.85 }, // chance each other lane holds an obstacle
+    typeWeights: { low: 0.3, high: 0.3, block: 0.4 },
+    types: {
+      // jump over: player feet must be above `height`
+      low: { width: 1.9, height: 0.85, depth: 0.6, capHeight: 0.1 },
+      // slide under: gap below the beam is `clearance`, shorter than standing, taller than sliding
+      high: { width: 2.0, clearance: 1.15, beamHeight: 1.1, depth: 0.7, pylonWidth: 0.18, pylonHeight: 2.6 },
+      // dodge by changing lane
+      block: { width: 1.9, height: 3.0, depth: 2.2 },
+    },
+    visual: {
+      lowStripeA: 0xffc93c,
+      lowStripeB: 0x2a2838,
+      lowCap: 0xff8a3c,
+      highBeam: 0xff5fa2,
+      highPylon: 0x2a2838,
+      block: 0xe8584f,
+      blockRib: 0x9c2f3a,
+      texturePx: 64,
+    },
   },
 
   coins: {
-    // TODO(M3): spawnFrequency, patterns
+    spawnChance: 0.8, // chance a gap between rows holds a coin pattern
+    maxActive: 160,
+    radius: 0.42,
+    thickness: 0.1,
+    height: 0.95, // coin centre above the road
+    spacing: 2.0, // between coins in a pattern
+    margin: 4, // keep coins this far from obstacle rows
+    spinSpeed: 3.2, // rad/sec
+    arcCoins: 6, // coins in the jump-arc pattern
+    arcScale: 0.85, // arc height relative to the real jump arc (forgiving)
+    patternWeights: { line: 0.45, step: 0.25, arc: 0.3 }, // arc only after a low obstacle
+    color: 0xffc93c,
+    emissive: 0xb8741a,
+    burst: { count: 10, speed: 4.5, life: 0.45, size: 0.22, gravity: 9, max: 80 },
+  },
+
+  score: {
+    pointsPerUnit: 1, // distance points
+    coinValue: 10,
+    storageKey: 'darlinggRun.best',
   },
 
   input: {
@@ -138,6 +187,7 @@ export const Config = deepFreeze({
     fpsSmoothing: 0.1,
     debugUpdateIntervalMs: 250,
     debugKey: 'Backquote',
+    restartDelay: 0.7, // seconds before game over accepts a restart
   },
 
   // Original "neon dusk" palette.

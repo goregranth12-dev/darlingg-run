@@ -55,6 +55,12 @@ export class CameraRig {
     }
   }
 
+  /** Jump straight to the follow position on the next update (restart). */
+  reset() {
+    this.snap = true;
+    this.roll = 0;
+  }
+
   shiftOrigin(dz) {
     this.pos.z += dz;
     this.look.z += dz;

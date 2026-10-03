@@ -1,12 +1,36 @@
 import * as THREE from 'three';
 import { Rng } from '../utils/rng.js';
-import { clamp, lerp } from '../utils/math.js';
 
-const rgb = (hex) => [(hex >> 16) & 255, (hex >> 8) & 255, hex & 255];
 const css = (hex) => `#${hex.toString(16).padStart(6, '0')}`;
 
-// Pink fur road: Voronoi "giraffe" patches in two pinks with fuzzy beige seams,
-// raised-looking light-pink lane dashes and pink edge rails. Tiles along the road.
+const rgba = (hex, a) => `rgba(${(hex >> 16) & 255},${(hex >> 8) & 255},${hex & 255},${a})`;
+
+// Soft round blob (radial gradient) used to build fuzzy fur spots.
+function blob(ctx, x, y, r, hex, alpha) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, rgba(hex, alpha));
+  g.addColorStop(0.65, rgba(hex, alpha * 0.9));
+  g.addColorStop(1, rgba(hex, 0));
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// One cheetah/leopard rosette: a ring of dark-pink lobes around a lighter pink core.
+function rosette(ctx, x, y, r, rng, v) {
+  const lobes = rng.int(5, 7);
+  const spin = rng.range(0, Math.PI * 2);
+  for (let i = 0; i < lobes; i++) {
+    const a = spin + (i / lobes) * Math.PI * 2 + rng.range(-0.25, 0.25);
+    const d = r * rng.range(0.5, 0.65);
+    blob(ctx, x + Math.cos(a) * d, y + Math.sin(a) * d * 0.85, r * rng.range(0.34, 0.46), v.pinkDark, 0.95);
+  }
+  blob(ctx, x, y, r * 0.5, v.pink, 0.9);
+}
+
+// Cheetah-skin road: beige fur with pink rosettes and dots, light-pink lane dashes and
+// pink edge rails. Tiles along the road (spots are drawn again one tile up/down).
 export function makeRoadTexture(config, lanes, anisotropy) {
   const { world, visual } = config;
   const v = visual.road;
@@ -15,55 +39,37 @@ export function makeRoadTexture(config, lanes, anisotropy) {
   const h = Math.round(world.chunkLength * ppu);
   const rng = new Rng(world.seed + 99);
 
-  // seed points, repeated one tile above and below so the pattern tiles in z
-  const pts = [];
-  for (let i = 0; i < world.roadCells; i++) {
-    const x = rng.range(0, w);
-    const y = rng.range(0, h);
-    for (const off of [-h, 0, h]) pts.push(x, y + off);
-  }
-  const radius = Math.sqrt((w * h) / world.roadCells) * 0.6;
-  const pink = rgb(v.pink);
-  const dark = rgb(v.pinkDark);
-  const light = rgb(v.pinkLight);
-  const beige = rgb(v.beige);
-
   const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext('2d');
-  const img = ctx.createImageData(w, h);
-  const seam = world.roadSeamWidth;
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      let d1 = 1e9;
-      let d2 = 1e9;
-      for (let i = 0; i < pts.length; i += 2) {
-        const dx = x - pts[i];
-        const dy = y - pts[i + 1];
-        const d = dx * dx + dy * dy;
-        if (d < d1) {
-          d2 = d1;
-          d1 = d;
-        } else if (d < d2) d2 = d;
+  ctx.fillStyle = css(v.beige);
+  ctx.fillRect(0, 0, w, h);
+  // soft tonal variation so the beige is not flat
+  for (let i = 0; i < 90; i++) blob(ctx, rng.range(0, w), rng.range(0, h), rng.range(30, 90), rng.next() < 0.5 ? v.beigeDark : v.pinkLight, 0.16);
+
+  // jittered grid of rosettes (+ small dots in the gaps)
+  const spacing = world.roadSpotSpacing * ppu;
+  const cols = Math.max(1, Math.round(w / spacing));
+  const rows = Math.max(1, Math.round(h / spacing));
+  const cw = w / cols;
+  const ch = h / rows;
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < cols; i++) {
+      const x = (i + 0.5 + (j % 2) * 0.5 + rng.range(-0.3, 0.3)) * cw;
+      const y = (j + 0.5 + rng.range(-0.3, 0.3)) * ch;
+      const r = world.roadSpotRadius * ppu * rng.range(0.7, 1.15);
+      for (const off of [-h, 0, h]) {
+        rosette(ctx, x, y + off, r, rng, v);
+        rosette(ctx, x - w, y + off, r, rng, v); // keeps spots crossing the left edge whole
       }
-      d1 = Math.sqrt(d1);
-      d2 = Math.sqrt(d2);
-      const noise = rng.next() - 0.5;
-      const edge = (d2 - d1) * 0.5 + noise * seam * 1.2; // ~distance to the seam
-      const beigeAmt = clamp(1 - edge / seam, 0, 1);
-      const t = clamp(d1 / radius, 0, 1);
-      const shade = noise * 0.22;
-      const o = (y * w + x) * 4;
-      for (let c = 0; c < 3; c++) {
-        const base = t < 0.5 ? lerp(dark[c], pink[c], t * 2) : lerp(pink[c], light[c], (t - 0.5) * 2);
-        const fur = base * (1 + shade);
-        img.data[o + c] = clamp(lerp(fur, beige[c] * (1 + shade * 0.5), beigeAmt), 0, 255);
+      for (let k = 0; k < 2; k++) {
+        const dx = (rng.next() - 0.5) * cw * 0.9 + cw * 0.5;
+        const dy = (rng.next() - 0.5) * ch * 0.9 + ch * 0.5;
+        for (const off of [-h, 0, h]) blob(ctx, i * cw + dx, j * ch + dy + off, r * 0.22, v.pinkDark, 0.9);
       }
-      img.data[o + 3] = 255;
     }
   }
-  ctx.putImageData(img, 0, 0);
 
   // fur: short strokes mostly along the road
   ctx.lineWidth = 1;
@@ -72,7 +78,7 @@ export function makeRoadTexture(config, lanes, anisotropy) {
     const y = rng.range(0, h);
     const a = Math.PI / 2 + rng.range(-0.9, 0.9);
     const len = rng.range(3, 8);
-    ctx.strokeStyle = rng.next() < 0.5 ? 'rgba(255,236,214,0.28)' : 'rgba(190,50,100,0.22)';
+    ctx.strokeStyle = rng.next() < 0.5 ? 'rgba(255,248,236,0.3)' : 'rgba(176,60,108,0.2)';
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len);

@@ -35,11 +35,8 @@ function monogram(width, depth) {
   const parts = shapes.map((shape) =>
     new THREE.ExtrudeGeometry(shape, {
       depth,
-      bevelEnabled: true,
-      bevelThickness: depth * 0.25,
-      bevelSize: 0.01,
-      bevelSegments: 1,
-      curveSegments: 10,
+      bevelEnabled: false,
+      curveSegments: 6,
     }),
   );
   const geo = mergeGeometries(parts);
@@ -54,23 +51,24 @@ function monogram(width, depth) {
 }
 
 /**
- * A rose-gold "gg" coin: disc with a raised rim and the monogram embossed on both faces,
- * facing +Z (it spins about Y). Vertex-coloured, `size` is the diameter.
+ * A gold coin: gold body and raised rim, a recessed white face and the gold "gg" monogram
+ * embossed on both sides, facing +Z (it spins about Y). Vertex-coloured; `size` is the diameter.
  */
 export function buildCoinGeometry(size, thickness, palette) {
   const R = size / 2;
-  const emboss = thickness * 0.35;
+  const emboss = thickness * 0.3;
   const parts = [];
   const add = (geo, hex) => parts.push(paint(geo, hex));
 
-  add(new THREE.CylinderGeometry(R, R, thickness, 36).rotateX(Math.PI / 2), palette.face);
+  add(new THREE.CylinderGeometry(R, R, thickness, 28).rotateX(Math.PI / 2), palette.rim);
   for (const side of [1, -1]) {
     const z = (side * thickness) / 2;
-    add(new THREE.TorusGeometry(R * 0.93, thickness * 0.2, 6, 36).translate(0, 0, z), palette.rim);
-    add(new THREE.TorusGeometry(R * 0.8, thickness * 0.07, 5, 36).translate(0, 0, z), palette.rim);
-    const logo = monogram(size * 0.58, emboss);
+    add(new THREE.TorusGeometry(R * 0.92, thickness * 0.22, 4, 28).translate(0, 0, z), palette.rim);
+    add(new THREE.CylinderGeometry(R * 0.82, R * 0.82, 0.02, 28).rotateX(Math.PI / 2).translate(0, 0, z + side * 0.006), palette.face);
+    add(new THREE.TorusGeometry(R * 0.82, thickness * 0.1, 3, 28).translate(0, 0, z), palette.rim);
+    const logo = monogram(size * 0.6, emboss);
     if (side < 0) logo.rotateY(Math.PI);
-    logo.translate(0, 0, z * 0.98);
+    logo.translate(0, 0, z + side * 0.014);
     add(logo, palette.logo);
   }
   const merged = mergeGeometries(parts);

@@ -8,6 +8,7 @@ const MARKUP = `
   <div class="overlay" data-ref="start">
     <div class="panel">
       <h1 class="title">Darlingg <em>Run</em></h1>
+      <div class="panel-foot">
       <ul class="controls">
         <li><b>Left / Right</b> change lane</li>
         <li><b>Up / Space</b> jump over low barriers</li>
@@ -15,6 +16,7 @@ const MARKUP = `
         <li class="touch">Swipe in any direction on a phone</li>
       </ul>
       <p class="prompt">Tap or press Space to run</p>
+      </div>
     </div>
   </div>
   <div class="overlay" data-ref="over" hidden>
@@ -56,6 +58,7 @@ export class UIManager {
   _onState(state) {
     const r = this.refs;
     r.start.hidden = state !== 'ready';
+    r.start.classList.add('overlay--clear'); // keep the cinematic visible behind the title
     r.over.hidden = state !== 'gameover';
     this.hud.hidden = state === 'ready';
     if (state === 'gameover' && this.score) {

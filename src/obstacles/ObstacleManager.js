@@ -34,10 +34,11 @@ export class ObstacleManager {
     this.reset();
   }
 
-  reset() {
+  /** Clears everything; the first row is placed `startDistance` ahead of `z`. */
+  reset(z = 0) {
     while (this.active.length > 0) this._remove(this.active.length - 1);
     this.rng.seed(this.cfg.seed || (Math.random() * 0xffffffff) >>> 0);
-    this.nextRowZ = -this.cfg.startDistance;
+    this.nextRowZ = z - this.cfg.startDistance;
     this.passLane = this.lanes.centerLane;
     this.renderer.flush();
   }

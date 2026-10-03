@@ -30,6 +30,9 @@ export class Player {
     this.runPhase = 0;
     this.bumpTimer = 0;
     this.bumpDir = 0;
+    this.carried = false;
+    this.group.rotation.set(0, 0, 0);
+    this.group.scale.setScalar(1);
     this.model.reset();
     this._sync();
   }
@@ -51,6 +54,15 @@ export class Player {
 
   die() {
     this.sm.die();
+  }
+
+  /** Ride on `parent` (the horse) lying across it; Player.update stops moving the group. */
+  attachTo(parent, y, roll, scale) {
+    this.carried = true;
+    parent.add(this.group);
+    this.group.position.set(0, y, 0);
+    this.group.rotation.set(0, 0, roll);
+    this.group.scale.setScalar(scale);
   }
 
   handleAction(action) {
@@ -87,6 +99,10 @@ export class Player {
   update(dt) {
     const { player: p, lanes: l, jump: j } = this.cfg;
     const sm = this.sm;
+    if (this.carried) {
+      this.model.update(dt, this.runPhase, sm.state, 0);
+      return;
+    }
     this.prevZ = this.z;
 
     if (!sm.alive) {

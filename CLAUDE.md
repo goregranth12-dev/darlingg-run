@@ -16,27 +16,33 @@ Frame order (`Game.update`): input drain -> `Player.update` (speed ramp, lanes, 
 `WorldManager.update` (recycle chunks) -> managers in order (obstacles, coins, collision, score) -> `CameraRig` ->
 sky/light follow -> UI. Render happens every frame in every state.
 
-Game states (`Game.state`): `ready` (start screen) -> `running` <-> `paused` (tab hidden) -> `gameover` -> `running` (restart,
+Game states (`Game.state`): `ready` (cinematic opening: the horse chases the flamingo on a cinematic camera, world scrolling,
+no obstacles) -> `running` (camera eases from the cinematic shot to the chase cam over `camera.introSeconds`; the horse chases for
+`horse.chaseSeconds` after the camera arrives, then is left behind) <-> `paused` (tab hidden) -> `caught` (crash: the horse races
+in, scoops the flamingo and gallops off; the camera swings to the `camera.outro` shot) -> `gameover` -> `running` (restart,
 `Game.resetRun()`). Start/restart is any TAP (tap/click/Enter) or JUMP action; restart is locked for `game.restartDelay`.
 
 - `core/`: Config (ALL tunables, deep-frozen), EventBus (sync, 2-arg emit), GameLoop (rAF, dt clamp, FPS),
   Renderer (renderer/scene/camera/lights/resize), CameraRig (chase cam), Game.
 - `player/`: Player (physics, lanes, bump), PlayerStateMachine (state + jump buffer/coyote/slide timers), PlayerModel (procedural flamingo-in-platform-heels character from the supplied character sheet; wings flap in the air, crouch on slide).
+- `chaser/`: HorseChaser (modes hidden / chase / approach / carry / done: the opening shot, the first seconds of a run and the
+  rescue), HorseModel (procedural brown rocking-horse unicorn with silver horn, mane, saddle studs and rockers; the gallop is a
+  rolling rock about the rocker arc).
 - `input/`: InputManager (ring-buffer action queue), KeyboardInput, SwipeInput (pointer events), Action enum.
 - `world/`: WorldManager (chunk pool, origin shift, ground), GroundChunk (road + instanced scenery),
   ChunkBuilder (seeded scenery placement), SceneryKit (shared geometry/materials/road texture), LaneSystem, Sky,
   CaseTextures / CasePatterns / CaseDraw (canvas-drawn patterns). Buildings are giant phone cases (lemon, red/pink stripes,
   cherry + bow, cheetah + cherries, charm stickers) standing on edge with the printed back facing the road: one bevelled
   extruded slab (CaseGeometry), 5 textured instanced variants (each chunk shows 3 of them), uniform scale, turned
-  `scenery.cases.turn` rad towards the oncoming player. The road is a procedural pink "fur" Voronoi texture with beige seams,
-  light-pink dashes and pink rails (RoadTexture).
+  `scenery.cases.turn` rad towards the oncoming player. The road is a procedural cheetah-skin texture (beige fur, pink
+  rosettes), light-pink dashes and pink rails (RoadTexture).
 - `obstacles/`: ObstacleManager (row spawning, pooled records), ObstacleRenderer (instanced meshes, slot pools), ObstacleTypes.
   Types: LOW (jump over, random variant: orange fan / purple fan / leather bear, 2.2 tall; FanGeometry + BearGeometry,
-  vertex-coloured), HIGH (slide under; its collision reaches above the jump apex so it cannot be hopped), BLOCK (change lane;
+  vertex-coloured), HIGH (slide under: the pink Darlingg flower arch, ArchGeometry; its collision reaches above the jump apex so it cannot be hopped), BLOCK (change lane;
   a standing phone case, cherry or player design, taller than the jump apex). Obstacle `variant` is chosen at spawn. Keep `types.high` / `types.block` heights above the jump apex (`v^2 / 2g`) if you tune the jump. Every row has a guaranteed passable "pass lane"
   (never a BLOCK; consecutive pass lanes differ by <= 1) and rows are >= `gapSeconds.min` apart, so a run is always survivable.
   Full-width LOW/HIGH "gates" are also generated. Emits `obstacleRow` (reused payload object).
-- `collectibles/`: CoinManager (pooled instanced spinning "gg" logo coins, CoinGeometry builds a rose-gold coin with the gg monogram embossed on both faces; lays patterns line/step/arc in the gap after each
+- `collectibles/`: CoinManager (pooled instanced spinning "gg" logo coins, CoinGeometry builds a gold coin with a white face and the gg monogram embossed on both sides; lays patterns line/step/arc in the gap after each
   `obstacleRow`), CoinBurst (pooled sparkle Points on pickup).
 - `collision/`: CollisionManager (swept AABB vs obstacles -> `playerHit`; coin pickups -> `coinCollected`).
   Player collision height is state-based (standing / sliding), see `Player.height`. `collision.graze` forgives overlaps

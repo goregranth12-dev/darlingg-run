@@ -13,7 +13,7 @@ export function paint(geometry, hex) {
   return g;
 }
 
-/** Ellipsoid centred at (x, y, z) with the given radii. */
-export function ellipsoid(rx, ry, rz, x, y, z, segments = 14) {
-  return new THREE.SphereGeometry(1, segments, Math.max(6, segments - 4)).scale(rx, ry, rz).translate(x, y, z);
+/** Ellipsoid centred at (x, y, z) with the given radii, optionally pitched about X first. */
+export function ellipsoid(rx, ry, rz, x, y, z, segments = 14, rotX = 0) {
+  return new THREE.SphereGeometry(1, segments, Math.max(3, Math.round(segments * 0.7))).scale(rx, ry, rz).rotateX(rotX).translate(x, y, z);
 }

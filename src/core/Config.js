@@ -62,6 +62,27 @@ export const Config = deepFreeze({
     fovBoost: 12, // extra degrees at max speed
     fovDamping: 3,
     speedPullback: 1.4, // extra distance behind at max speed
+    introSeconds: 2.2, // cinematic -> gameplay camera blend
+    cinematic: {
+      distance: 5.4, // from the flamingo, in front of it looking back at the chase
+      height: 1.4,
+      angle: 0.55, // radians off the running direction (front 3/4 view)
+      orbit: 0.3, // slow sway amplitude (rad)
+      orbitSpeed: 0.5,
+      lookHeight: 1.3,
+      lookBack: 2.2, // look-at point this far behind the flamingo (towards the horse)
+      fov: 52,
+    },
+    outro: { // rescue shot: behind and beside, watching the horse gallop in and away
+      distance: 7,
+      height: 2.5,
+      angle: 0.75,
+      orbit: 0.12,
+      orbitSpeed: 0.5,
+      lookHeight: 1.3,
+      lookBack: 1.5, // look-at point this far ahead of the focus
+      fov: 54,
+    },
     portraitFov: 88, // used when the viewport is narrow
     portraitPullback: 0.45, // fractional extra distance in portrait
     portraitBlendRange: 0.5, // aspect span (below 1.0) over which portrait kicks in
@@ -83,9 +104,9 @@ export const Config = deepFreeze({
     roadLineWidth: 0.24,
     roadRailWidth: 0.3, // pink edge rails
     roadTexturePxPerUnit: 40,
-    roadCells: 8, // pink fur "patches" per chunk-length tile
-    roadSeamWidth: 10, // beige seam half-width between patches (px)
-    roadHairs: 7000, // short fur strokes drawn over the patches
+    roadSpotSpacing: 1.5, // cheetah rosettes on a jittered grid, this far apart
+    roadSpotRadius: 0.5,
+    roadHairs: 7000, // short fur strokes drawn over the fur
     maxAnisotropy: 8,
   },
 
@@ -134,6 +155,33 @@ export const Config = deepFreeze({
     maxPixelRatio: 2,
   },
 
+  horse: {
+    scale: 1.1,
+    startGap: 3.0, // distance behind the flamingo during the opening shot
+    chaseGap: 3.5, // while chasing at the start of a run
+    chaseSeconds: 5, // visible chase after the camera reaches the game view
+    wobble: 0.35,
+    followDamping: 3.5,
+    fallBackAccel: 5, // how quickly it is left behind afterwards
+    hideGap: 16,
+    gallopRate: 7.5, // rocking rad/sec
+    rockAmount: 0.2,
+    bobHeight: 0.1,
+    rescue: {
+      startDistance: 60, // appears this far behind the flamingo after a crash
+      speed: 52,
+      approachEase: 2.2, // speed = distance * this, capped: eases in so the arrival is visible
+      minApproachSpeed: 7,
+      carryAccel: 18,
+      grabDistance: 1.3,
+      carrySeconds: 1.9, // gallops off with the flamingo before game over appears
+      carrySpeed: 36,
+      carryHeight: 1.45,
+      carryRoll: 1.35,
+      carryScale: 0.7,
+    },
+  },
+
   collision: {
     graze: 0.22, // overlap shallower than this on any axis is a near-miss and does not count
   },
@@ -153,31 +201,29 @@ export const Config = deepFreeze({
       // jump over: player feet must be above `height`
       low: { width: 1.3, height: 2.2, depth: 0.6, thickness: 0.22 }, // jump over: orange fan, purple fan or leather bear (random)
       // slide under: gap below the beam is `clearance`, shorter than standing, taller than sliding
-      high: { width: 2.0, clearance: 1.15, beamHeight: 2.55, depth: 0.7, pylonWidth: 0.18, pylonHeight: 3.8 },
+      // slide under: the Darlingg flower arch. Opening is `clearance` high, so standing runners
+      // hit it and sliders pass; the arch reaches above the jump apex so it cannot be hopped.
+      high: { width: 2.2, clearance: 1.4, height: 4.2, depth: 0.5, post: 0.5, corner: 0.5, bevel: 0.1 },
       // dodge by changing lane
       block: { width: 1.8, height: 4.2, depth: 0.8 }, // standing phone case (cherry or player), taller than the jump apex
-    },
-    visual: {
-      highBeam: 0xff5fa2,
-      highPylon: 0x2a2838,
     },
   },
 
   coins: {
     spawnChance: 0.8, // chance a gap between rows holds a coin pattern
     maxActive: 160,
-    radius: 0.45, // pickup radius (the logo is ~0.9 wide)
-    thickness: 0.12,
-    size: 0.95, // coin diameter
-    height: 0.95, // coin centre above the road
+    radius: 0.8, // pickup radius
+    thickness: 0.2,
+    size: 1.6, // coin diameter (big and easy to see)
+    height: 1.3, // coin centre above the road
     spacing: 2.0, // between coins in a pattern
     margin: 4, // keep coins this far from obstacle rows
     spinSpeed: 3.2, // rad/sec
     arcCoins: 6, // coins in the jump-arc pattern
     arcScale: 0.85, // arc height relative to the real jump arc (forgiving)
     patternWeights: { line: 0.45, step: 0.25, arc: 0.3 }, // arc only after a low obstacle
-    color: 0xf2a46b, // rose gold
-    emissive: 0x9a5224,
+    color: 0xffc43c, // gold (sparkle colour)
+    emissive: 0xff9a18, // keeps the gold rich and the white face warm under the dusk light
     burst: { count: 10, speed: 4.5, life: 0.45, size: 0.22, gravity: 9, max: 80 },
   },
 
@@ -215,7 +261,7 @@ export const Config = deepFreeze({
     hemiGround: 0x3b2a4d,
     sunLight: 0xffd2a1,
     ground: 0x5c2748,
-    road: { pink: 0xe9709f, pinkDark: 0xd04a82, pinkLight: 0xf79ac0, beige: 0xf8e8c8, dash: 0xffd9e6, dashShadow: 0xb8386a, rail: 0xf06a9a, railLight: 0xffa6c6 },
+    road: { pink: 0xee7ba6, pinkDark: 0xcf3f7c, pinkLight: 0xf8a8c8, beige: 0xf7e6c6, beigeDark: 0xe9cfa6, dash: 0xffd9e6, dashShadow: 0xb8386a, rail: 0xf06a9a, railLight: 0xffa6c6 },
     sidewalk: 0xf3a9c3,
     cases: {
       lemon: { base: 0xfbeec2, fruit: 0xf6a81e, plate: 0xa9a2ab, lens: 0x1b1626, ring: 0xd9d6dc, flash: 0xfff0d0, text: 0xd9a56a, edge: 0xfbeec2 },
@@ -224,7 +270,12 @@ export const Config = deepFreeze({
       charm: { plate: 0xc9ccd2, lens: 0x14141a, ring: 0x8e9096, flash: 0xf4f4f6, base: 0xe9dcc6, edge: 0xe9dcc6, red: 0xd0102a, leaf: 0x4f9a2c, cup: 0xb9dc7a, cupDark: 0x8fc060, silver: 0xb9bcc4, tag: 0xff5fa2, tagLight: 0xffd0e0, croissant: 0xf0953c, croissantDark: 0xd77422, leopard: 0xe8a84a, spot: 0x3a2412, glass: 0x23232a },
       cherry: { plate: 0xc9ccd2, lens: 0x14141a, ring: 0x8e9096, flash: 0xf4f4f6, a: 0xe0304a, b: 0x9d0d20, fruit: 0xd01030, shine: 0xffd7de, stem: 0x8aa84a, bow: 0xf0506e, bowDark: 0xc23a56, edge: 0xb3162b },
     },
-    coin: { face: 0xeea068, rim: 0xffbf8f, logo: 0xffcfab }, // rose-gold coin tones
+    coin: { face: 0xfbf6ee, rim: 0xe9a01c, logo: 0xe39a14 }, // gold rim and logo around a white face
+    horse: { body: 0xb8622b, silver: 0xd3d7de, dark: 0x1b1410, stones: 0xf6e0dc },
+    arch: {
+      pink: 0xf0629c, text: 0xf3d58a, textShade: 0xb98a3a,
+      rose: [0xf06aa6, 0xf9b8d2, 0xe84d8f], hydrangea: [0xfff0dc, 0xf9b8d2, 0xf08cb8], leaf: 0x7a8a3a, gyp: 0xfff8ee,
+    },
     bear: { leather: 0xc0652b, snout: 0xf2e2c4, dark: 0x14110f, gold: 0xe6a77a },
     fans: {
       dark: 0x1c1b22,

@@ -35,7 +35,7 @@ export class CoinManager {
     this.lanes = lanes;
     this.geometry = buildCoinGeometry(c.size, c.thickness, this.config.visual.coin);
     this.material = new THREE.MeshStandardMaterial({
-      vertexColors: true, emissive: c.emissive, emissiveIntensity: 0.55, roughness: 0.28, metalness: 0.4,
+      vertexColors: true, emissive: c.emissive, emissiveIntensity: 0.3, roughness: 0.28, metalness: 0.3,
     });
     this.mesh = new THREE.InstancedMesh(this.geometry, this.material, c.maxActive);
     this.mesh.frustumCulled = false;

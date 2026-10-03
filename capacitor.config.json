@@ -1,0 +1,6 @@
+{
+  "appId": "com.darlingg.run",
+  "appName": "Darlingg Run",
+  "webDir": "dist",
+  "android": { "backgroundColor": "#f4a8c4" }
+}

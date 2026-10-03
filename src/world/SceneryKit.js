@@ -3,6 +3,7 @@ import { disposeAll } from '../utils/dispose.js';
 import { makeCaseTextures } from './CaseTextures.js';
 import { makeRoadTexture } from './RoadTexture.js';
 import { buildCaseGeometry, caseThickness } from './CaseGeometry.js';
+import { buildFanTree, buildSign } from './PropGeometry.js';
 
 const unit = (geo) => geo.translate(0, 0.5, 0); // base on y=0 so instances scale up from the ground
 
@@ -18,17 +19,39 @@ export class SceneryKit {
 
     this.boxGeo = unit(new THREE.BoxGeometry(1, 1, 1));
     this.poleGeo = unit(new THREE.CylinderGeometry(1, 1, 1, 6));
-    this.coneGeo = unit(new THREE.ConeGeometry(1, 1, 7));
 
     this.sidewalkMat = new THREE.MeshStandardMaterial({ color: visual.sidewalk, roughness: 0.95 });
     this._buildCases(config, renderer);
     this.poleMat = new THREE.MeshStandardMaterial({ color: visual.lampPole, roughness: 0.7 });
     this.lampMat = new THREE.MeshBasicMaterial({ color: visual.lampLight });
-    this.trunkMat = new THREE.MeshStandardMaterial({ color: visual.trunk, roughness: 1 });
-    this.crownMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, flatShading: true });
+    this._buildProps(config, renderer);
 
     this.groundMat = new THREE.MeshStandardMaterial({ color: visual.ground, roughness: 1 });
     this.groundGeo = new THREE.PlaneGeometry(world.groundSize, world.groundSize).rotateX(-Math.PI / 2);
+  }
+
+  // Roadside props (pink hand-fan tree, "made to be noticed" signboard): shared by every chunk.
+  _buildProps(config, renderer) {
+    const pal = config.visual.props;
+    const aniso = Math.min(config.world.maxAnisotropy, renderer.capabilities.getMaxAnisotropy());
+    const fan = buildFanTree(config.scenery.fanTree, pal, config.world.seed, aniso);
+    const sign = buildSign(config.scenery.sign, pal, aniso);
+    this.fanBodyGeo = fan.body;
+    this.fanCanopyGeo = fan.canopy;
+    this.signBoardGeo = sign.board;
+    this.signPostGeo = sign.post;
+    const toy = () => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, flatShading: true });
+    this.fanBodyMat = toy();
+    this.signPostMat = toy();
+    this.fanCanopyMat = new THREE.MeshStandardMaterial({ map: fan.texture, roughness: 0.8, side: THREE.DoubleSide });
+    this.signBoardMats = [
+      new THREE.MeshStandardMaterial({ map: sign.texture, roughness: 0.5 }),
+      new THREE.MeshStandardMaterial({ color: pal.signEdge, roughness: 0.6 }),
+    ];
+    this.propResources = [
+      fan.body, fan.canopy, sign.board, sign.post, this.fanBodyMat, this.signPostMat, this.fanCanopyMat,
+      ...this.signBoardMats, fan.texture, sign.texture,
+    ];
   }
 
   // Phone-case buildings: one rounded, bevelled slab shared by three patterned variants.
@@ -47,9 +70,9 @@ export class SceneryKit {
 
   dispose() {
     disposeAll([
-      this.roadGeo, this.roadMat, this.boxGeo, this.poleGeo, this.coneGeo,
+      this.roadGeo, this.roadMat, this.boxGeo, this.poleGeo, ...this.propResources,
       this.sidewalkMat, this.poleMat, this.lampMat, this.caseGeo, ...this.caseMats.flat(), ...this.caseTextures,
-      this.trunkMat, this.crownMat, this.groundMat, this.groundGeo,
+      this.groundMat, this.groundGeo,
     ]);
   }
 }

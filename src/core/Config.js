@@ -130,10 +130,27 @@ export const Config = deepFreeze({
     lampArm: 0.9,
     lampRadius: 0.07,
     lampHeadSize: 0.5,
-    treesPerSide: { min: 0, max: 2 },
-    treeTrunkHeight: 1.2,
-    treeCrownHeight: { min: 2, max: 3.4 },
-    treeCrownRadius: { min: 0.9, max: 1.4 },
+    // Roadside props replace trees: a pink hand-fan "tree" and a "made to be noticed" signboard.
+    propsPerSide: { min: 0, max: 2 },
+    fanTree: {
+      trunkHeight: 2.25,
+      fanRadius: 1.5,
+      fanFrom: 0.28, // fan sector angles (rad from +X, counter-clockwise)
+      fanTo: 2.86,
+      fanThickness: 0.06,
+      scale: { min: 0.9, max: 1.25 },
+    },
+    sign: {
+      text: 'made to be noticed',
+      width: 2.3,
+      height: 1.1,
+      depth: 0.12,
+      chamfer: 0.14,
+      postHeight: 2.3,
+      postWidth: 0.16,
+      scale: { min: 0.9, max: 1.15 },
+      texturePx: 512,
+    },
     maxInstancesPerSide: 6, // buffer size for instanced scenery (>= max counts above)
   },
 
@@ -176,7 +193,7 @@ export const Config = deepFreeze({
       // slide under: gap below the beam is `clearance`, shorter than standing, taller than sliding
       // slide under: the Darlingg flower arch. Opening is `clearance` high, so standing runners
       // hit it and sliders pass; the arch reaches above the jump apex so it cannot be hopped.
-      high: { width: 2.2, clearance: 1.4, height: 4.2, depth: 0.5, post: 0.5, corner: 0.6, bevel: 0.1 },
+      high: { width: 2.4, clearance: 1.85, height: 4.2, depth: 0.5, post: 0.4, corner: 0.8, bevel: 0.1 },
       // dodge by changing lane
       block: { width: 1.8, height: 4.2, depth: 0.8 }, // standing phone case (cherry or player), taller than the jump apex
     },
@@ -260,8 +277,11 @@ export const Config = deepFreeze({
     },
     lampPole: 0x2a2838,
     lampLight: 0xffe3a8,
-    trunk: 0x4a3a35,
-    crowns: [0x2f8f6b, 0x3aa57a, 0x27795f],
+    props: {
+      trunk: 0xa8662d, trunkWrap: 0xb87a3c, knob: 0xdcae5a, rib: 0xc99b55,
+      fanBase: 0xf9bba8, fanSpot: 0xe9648c,
+      signBoard: 0xe9a823, signEdge: 0xb8801a, signInk: 0x1d1b17, post: 0x4b4743, postBase: 0x3f3b37, bolt: 0xd6b86a,
+    },
     player: {
       body: 0xf5427a, // raspberry pink
       edge: 0xffb3cf, // pale pink feather trim

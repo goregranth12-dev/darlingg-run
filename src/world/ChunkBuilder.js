@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 
 const dummy = new THREE.Object3D();
-const color = new THREE.Color();
 
 const place = (mesh, i, x, y, z, sx, sy, sz, ry = 0) => {
   dummy.position.set(x, y, z);
@@ -11,7 +10,6 @@ const place = (mesh, i, x, y, z, sx, sy, sz, ry = 0) => {
   mesh.setMatrixAt(i, dummy.matrix);
 };
 
-const tint = (mesh, i, hex) => mesh.setColorAt(i, color.setHex(hex));
 const kitThickness = (cs) => cs.depth + 2 * cs.bevel;
 
 /** Instance capacities needed per chunk, derived from Config. */
@@ -20,7 +18,7 @@ export function instanceCaps(config) {
   const lamps = Math.ceil(config.world.chunkLength / s.lampSpacing) * 2;
   return {
     cases: s.maxInstancesPerSide * 2,
-    trees: s.maxInstancesPerSide * 2,
+    props: s.maxInstancesPerSide * 2,
     lamps,
   };
 }
@@ -28,7 +26,7 @@ export function instanceCaps(config) {
 // Fills a chunk's instanced meshes with seeded, per-chunk scenery.
 // Chunk-local space: z in [-L/2, L/2], x=0 is the road centre.
 export function populateChunk(chunk, rng, config, lanes) {
-  const { world, scenery: s, visual } = config;
+  const { world, scenery: s } = config;
   const L = world.chunkLength;
   const roadHalf = lanes.roadWidth / 2;
   const m = chunk.meshes;
@@ -79,22 +77,33 @@ export function populateChunk(chunk, rng, config, lanes) {
   }
   m.poles.count = m.heads.count = li;
 
-  let ti = 0;
+  // Roadside props on the sidewalk, between the lamps: hand-fan trees and signboards, turned like the cases.
+  let fans = 0;
+  let signs = 0;
   for (let side = -1; side <= 1; side += 2) {
-    const n = Math.min(rng.int(s.treesPerSide.min, s.treesPerSide.max), slots);
+    const n = Math.min(rng.int(s.propsPerSide.min, s.propsPerSide.max), slots);
     const start = rng.int(0, slots - 1);
     for (let k = 0; k < n; k++) {
       const z = -L / 2 + (((start + k) % slots) + 0.75) * s.lampSpacing + rng.range(-1, 1);
       const x = side * (roadHalf + world.sidewalkWidth * 0.6);
-      const ch = rng.range(s.treeCrownHeight.min, s.treeCrownHeight.max);
-      const cr = rng.range(s.treeCrownRadius.min, s.treeCrownRadius.max);
-      place(m.trunks, ti, x, 0, z, 0.18, s.treeTrunkHeight, 0.18);
-      place(m.crowns, ti, x, s.treeTrunkHeight * 0.8, z, cr, ch, cr);
-      tint(m.crowns, ti, rng.pick(visual.crowns));
-      ti++;
+      const ry = side * -(Math.PI / 2 - cs.turn);
+      if (rng.next() < 0.5) {
+        const sc = rng.range(s.fanTree.scale.min, s.fanTree.scale.max);
+        place(m.fanBody, fans, x, 0, z, sc, sc, sc, ry);
+        place(m.fanCanopy, fans, x, 0, z, sc, sc, sc, ry);
+        fans++;
+      } else {
+        const sc = rng.range(s.sign.scale.min, s.sign.scale.max);
+        place(m.signBoard, signs, x, 0, z, sc, sc, sc, ry);
+        place(m.signPost, signs, x, 0, z, sc, sc, sc, ry);
+        signs++;
+      }
     }
   }
-  m.trunks.count = m.crowns.count = ti;
+  m.fanBody.count = m.fanCanopy.count = fans;
+  m.signBoard.count = m.signPost.count = signs;
+  for (const mesh of [m.fanBody, m.fanCanopy]) mesh.visible = fans > 0;
+  for (const mesh of [m.signBoard, m.signPost]) mesh.visible = signs > 0;
 
   for (const key in m) {
     const mesh = m[key];

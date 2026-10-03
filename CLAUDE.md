@@ -1,7 +1,7 @@
 # Darlingg Run
 
 3D endless runner. Vanilla JS (ES modules) + Three.js (pinned `0.186.1`) + Vite. No frameworks, no TypeScript.
-All art is original procedural placeholder geometry; no external assets.
+All art is procedural geometry / canvas textures. The one shipped image is the supplied loading-screen art (`public/loading.webp`).
 
 ## Commands
 - `npm install`
@@ -25,6 +25,9 @@ Game states (`Game.state`): `ready` (cinematic opening: the flamingo runs toward
 - `core/`: Config (ALL tunables, deep-frozen), EventBus (sync, 2-arg emit), GameLoop (rAF, dt clamp, FPS),
   Renderer (renderer/scene/camera/lights/resize), CameraRig (chase cam), Game.
 - `player/`: Player (physics, lanes, bump), PlayerStateMachine (state + jump buffer/coyote/slide timers), PlayerModel (procedural flamingo-in-platform-heels character from the supplied character sheet; wings flap in the air, crouch on slide).
+- Loading screen: `index.html` shows `public/loading.webp` (inline CSS, paints before the bundle) and `main.js` removes it once
+  the Game is built and `MIN_LOADING_MS` has passed. Roadside props (instead of trees): pink hand-fan tree and the "made to be
+  noticed" signboard (`world/PropGeometry.js`, 4 instanced meshes per chunk, turned like the cases).
 - `input/`: InputManager (ring-buffer action queue), KeyboardInput, SwipeInput (pointer events), Action enum.
 - `world/`: WorldManager (chunk pool, origin shift, ground), GroundChunk (road + instanced scenery),
   ChunkBuilder (seeded scenery placement), SceneryKit (shared geometry/materials/road texture), LaneSystem, Sky,
@@ -35,7 +38,7 @@ Game states (`Game.state`): `ready` (cinematic opening: the flamingo runs toward
   rosettes), light-pink dashes and pink rails (RoadTexture).
 - `obstacles/`: ObstacleManager (row spawning, pooled records), ObstacleRenderer (instanced meshes, slot pools), ObstacleTypes.
   Types: LOW (jump over, random variant: orange fan / purple fan / leather bear, 2.2 tall; FanGeometry + BearGeometry,
-  vertex-coloured), HIGH (slide under: the pink Darlingg arch with pearls, hearts and bows, ArchGeometry; its collision reaches above the jump apex so it cannot be hopped), BLOCK (change lane;
+  vertex-coloured), HIGH (slide under: the pink upside-down-U Darlingg arch, opening `types.high.clearance` high (taller than the slide, shorter than the standing flamingo), with pearls, hearts and bows, ArchGeometry; its collision reaches above the jump apex so it cannot be hopped), BLOCK (change lane;
   a standing phone case, cherry or player design, taller than the jump apex). Obstacle `variant` is chosen at spawn. Keep `types.high` / `types.block` heights above the jump apex (`v^2 / 2g`) if you tune the jump. Every row has a guaranteed passable "pass lane"
   (never a BLOCK; consecutive pass lanes differ by <= 1) and rows are >= `gapSeconds.min` apart, so a run is always survivable.
   Full-width LOW/HIGH "gates" are also generated. Emits `obstacleRow` (reused payload object).

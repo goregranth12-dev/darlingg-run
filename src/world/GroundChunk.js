@@ -35,8 +35,10 @@ export class GroundChunk {
       caseE: inst(kit.caseGeo, kit.caseMats[4], caps.cases),
       poles: inst(kit.poleGeo, kit.poleMat, caps.lamps),
       heads: inst(kit.boxGeo, kit.lampMat, caps.lamps),
-      trunks: inst(kit.poleGeo, kit.trunkMat, caps.trees),
-      crowns: inst(kit.coneGeo, kit.crownMat, caps.trees, true),
+      fanBody: inst(kit.fanBodyGeo, kit.fanBodyMat, caps.props),
+      fanCanopy: inst(kit.fanCanopyGeo, kit.fanCanopyMat, caps.props),
+      signBoard: inst(kit.signBoardGeo, kit.signBoardMats, caps.props),
+      signPost: inst(kit.signPostGeo, kit.signPostMat, caps.props),
     };
     this.group.visible = false;
   }

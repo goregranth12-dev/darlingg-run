@@ -10,8 +10,32 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="icon" href="data:," />
     <title>Darlingg Run</title>
+    <style>
+      /* Loading screen: styled inline so it paints before the bundle loads. */
+      #loading {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: #f4a8c4;
+        transition: opacity 0.5s ease;
+        --art: url('/loading.webp');
+      }
+      #loading.is-done { opacity: 0; pointer-events: none; }
+      #loading .loading-bg,
+      #loading .loading-art {
+        position: absolute;
+        inset: 0;
+        background: var(--art) center / cover no-repeat;
+      }
+      #loading .loading-bg { filter: blur(26px) saturate(1.1); transform: scale(1.15); }
+      #loading .loading-art { background-size: contain; }
+    </style>
   </head>
   <body>
+    <div id="loading" role="img" aria-label="Darlingg Run is loading">
+      <div class="loading-bg"></div>
+      <div class="loading-art"></div>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
   </body>

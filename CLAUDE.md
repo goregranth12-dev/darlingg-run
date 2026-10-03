@@ -21,7 +21,7 @@ Game states (`Game.state`): `ready` (start screen) -> `running` <-> `paused` (ta
 
 - `core/`: Config (ALL tunables, deep-frozen), EventBus (sync, 2-arg emit), GameLoop (rAF, dt clamp, FPS),
   Renderer (renderer/scene/camera/lights/resize), CameraRig (chase cam), Game.
-- `player/`: Player (physics, lanes, bump), PlayerStateMachine (state + jump buffer/coyote/slide timers), PlayerModel (procedural mesh/poses).
+- `player/`: Player (physics, lanes, bump), PlayerStateMachine (state + jump buffer/coyote/slide timers), PlayerModel (procedural flamingo-in-platform-heels character from the supplied character sheet; wings flap in the air, crouch on slide).
 - `input/`: InputManager (ring-buffer action queue), KeyboardInput, SwipeInput (pointer events), Action enum.
 - `world/`: WorldManager (chunk pool, origin shift, ground), GroundChunk (road + instanced scenery),
   ChunkBuilder (seeded scenery placement), SceneryKit (shared geometry/materials/road texture), LaneSystem, Sky.

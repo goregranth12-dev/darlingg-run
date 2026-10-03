@@ -15,7 +15,7 @@ export const Config = deepFreeze({
     speedIncreasePerSecond: 0.12, // reaches max after ~170s
     strideRate: 0.55, // run-cycle radians per unit travelled
     bobHeight: 0.07, // vertical run bob
-    standHeight: 2.0, // collision height while running/jumping
+    standHeight: 2.2, // collision height while running/jumping (head tip is cosmetic)
     halfWidth: 0.25, // collision half extents (x / z)
     halfDepth: 0.3,
     runLean: -0.12, // forward lean (rad)
@@ -215,12 +215,16 @@ export const Config = deepFreeze({
     trunk: 0x4a3a35,
     crowns: [0x2f8f6b, 0x3aa57a, 0x27795f],
     player: {
-      suit: 0xff5fa2,
-      limbs: 0x3a2f6b,
-      skin: 0xf4c9a5,
-      scarf: 0xffd25a,
-      visor: 0x32e6c8,
-      shoe: 0xf2eedd,
+      body: 0xf5427a, // raspberry pink
+      edge: 0xffb3cf, // pale pink feather trim
+      beak: 0xffa5c0,
+      beakTip: 0x1b1b24,
+      eyeWhite: 0xfffaf5,
+      pupil: 0x15151c,
+      shoe: 0xd62856,
+      sole: 0x7a1730,
+      fur: 0xffc3d6,
+      gold: 0xf2b632,
     },
   },
 });

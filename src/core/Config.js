@@ -15,7 +15,7 @@ export const Config = deepFreeze({
     speedIncreasePerSecond: 0.12, // reaches max after ~170s
     strideRate: 0.55, // run-cycle radians per unit travelled
     bobHeight: 0.07, // vertical run bob
-    standHeight: 2.3, // collision height while running/jumping (head tip is cosmetic)
+    standHeight: 2.4, // collision height while running/jumping (head tip is cosmetic)
     halfWidth: 0.25, // collision half extents (x / z)
     halfDepth: 0.3,
     runLean: -0.12, // forward lean (rad)
@@ -194,7 +194,7 @@ export const Config = deepFreeze({
       // slide under: gap below the beam is `clearance`, shorter than standing, taller than sliding
       // slide under: the Darlingg flower arch. Opening is `clearance` high, so standing runners
       // hit it and sliders pass; the arch reaches above the jump apex so it cannot be hopped.
-      high: { width: 2.5, clearance: 2.0, height: 5.4, depth: 0.5, post: 0.4, corner: 0.85, bevel: 0.1, textY: 0.74 },
+      high: { width: 2.7, clearance: 2.05, height: 4.1, depth: 0.5, post: 0.26, corner: 1.0, bevel: 0.08, textY: 0.6 },
       // dodge by changing lane
       block: { width: 1.8, height: 4.6, depth: 0.8 }, // standing phone case (cherry or player), taller than the jump apex
     },

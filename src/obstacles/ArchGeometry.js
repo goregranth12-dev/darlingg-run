@@ -37,7 +37,7 @@ export function buildArchBody(a) {
 
 /** Gold script "Darlingg" on a transparent plane, placed on the arch face above the opening. */
 export function buildArchText(a, pal) {
-  const w = a.width * 0.66;
+  const w = a.width * 0.62;
   const h = w * 0.3;
   const canvas = document.createElement('canvas');
   canvas.width = 640;

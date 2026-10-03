@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Darlingg Run</string>
+    <string name="title_activity_main">Darlingg Run</string>
+    <string name="package_name">com.darlingg.run</string>
+    <string name="custom_url_scheme">com.darlingg.run</string>
+</resources>

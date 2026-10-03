@@ -37,7 +37,7 @@ export function buildArchBody(a) {
 
 /** Gold script "Darlingg" on a transparent plane, placed on the arch face above the opening. */
 export function buildArchText(a, pal) {
-  const w = a.width * 0.86;
+  const w = a.width * 0.66;
   const h = w * 0.3;
   const canvas = document.createElement('canvas');
   canvas.width = 640;
@@ -66,7 +66,7 @@ export function buildArchText(a, pal) {
   const map = new THREE.CanvasTexture(canvas);
   map.colorSpace = THREE.SRGBColorSpace;
   map.anisotropy = 4;
-  const geo = new THREE.PlaneGeometry(w, h).translate(0, a.clearance + (a.height - a.clearance) * 0.42, a.depth / 2 + a.bevel + 0.012);
+  const geo = new THREE.PlaneGeometry(w, h).translate(0, a.clearance + (a.height - a.clearance) * a.textY, a.depth / 2 + a.bevel + 0.012);
   return { geo, map };
 }
 

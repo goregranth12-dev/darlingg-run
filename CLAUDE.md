@@ -76,3 +76,9 @@ Any new spawner (obstacles, coins) MUST implement `shiftOrigin(dz)`.
 - [x] M4 start screen, HUD, game-over screen, high score (localStorage). Pause is auto-only (tab hidden); no pause menu yet
 - [ ] M5 polish: screen shake, camera effects, materials, audio, post-processing
 - [ ] M6 final original character/environment assets
+
+## Android APK
+Capacitor wraps the Vite build (`capacitor.config.json`, id `com.darlingg.run`, portrait, icon in `android/app/src/main/res/mipmap-*`).
+- `npm run android:apk` builds `android/app/build/outputs/apk/debug/app-debug.apk` (needs JDK 17+ and the Android SDK).
+- `.github/workflows/android-apk.yml` builds it on every push and publishes `darlingg-run.apk` to the `apk-latest` release.
+- After web changes: `npm run android:sync` copies `dist/` into the Android project.

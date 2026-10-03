@@ -95,15 +95,15 @@ export class ObstacleRenderer {
     return slot;
   }
 
-  release(type, slot) {
-    this._write(type, slot, 0, -1000, true);
+  release(type, slot, variant = 0) {
+    this._write(type, slot, 0, -1000, true, variant);
     this.inUse[type][slot] = 0;
     this.free[type].push(slot);
   }
 
-  /** Positions the obstacle in `slot` at lane x / world z. */
-  set(type, slot, x, z) {
-    this._write(type, slot, x, z, false);
+  /** Positions the obstacle in `slot` at lane x / world z (variant picks the fan colour). */
+  set(type, slot, x, z, variant = 0) {
+    this._write(type, slot, x, z, false, variant);
   }
 
   _put(mesh, i, x, y, z, sx, sy, sz) {
@@ -113,16 +113,16 @@ export class ObstacleRenderer {
     mesh.setMatrixAt(i, dummy.matrix);
   }
 
-  _write(type, slot, x, z, hidden) {
+  _write(type, slot, x, z, hidden, variant) {
     const k = hidden ? 0 : 1;
     const m = this.meshes;
     const t = this.t;
     if (type === ObstacleType.LOW) {
       const o = t.low;
-      const flip = slot & 1 ? -1 : 1; // alternate which side the orange fan stands on
       const h = o.height * k;
-      this._put(m.fanOrange, slot, x - o.pairOffset * flip, 0, z, h, h, h);
-      this._put(m.fanPurple, slot, x + o.pairOffset * flip, 0, z, h, h, h);
+      // one fan per slot, orange or purple; the other mesh's matrix for this slot stays hidden
+      this._put(m.fanOrange, slot, x, 0, z, variant === 0 ? h : 0, variant === 0 ? h : 0, variant === 0 ? h : 0);
+      this._put(m.fanPurple, slot, x, 0, z, variant === 1 ? h : 0, variant === 1 ? h : 0, variant === 1 ? h : 0);
     } else if (type === ObstacleType.HIGH) {
       const o = t.high;
       this._put(m.highBeam, slot, x, o.clearance, z, o.width * k, o.beamHeight * k, o.depth * k);

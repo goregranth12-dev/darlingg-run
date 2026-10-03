@@ -34,9 +34,9 @@ export const Config = deepFreeze({
   },
 
   jump: {
-    jumpVelocity: 11.5,
-    gravity: 34,
-    fastFallVelocity: -24, // downward speed when pressing down mid-air
+    jumpVelocity: 16,
+    gravity: 36,
+    fastFallVelocity: -32, // downward speed when pressing down mid-air
     coyoteTimeMs: 90, // grace after leaving the ground
     inputBufferMs: 150, // jump pressed this long before landing still fires
   },
@@ -135,18 +135,18 @@ export const Config = deepFreeze({
     spawnAhead: 125, // rows spawn this far in front of the player
     despawnBehind: 14, // and are recycled this far behind
     poolPerType: 30, // pooled instances per obstacle type
-    gapSeconds: { start: 1.9, min: 1.05 }, // time between rows, shrinks with speed
+    gapSeconds: { start: 2.0, min: 1.2 }, // time between rows, shrinks with speed
     wideGateChance: 0.14, // chance a row is a full-width jump/slide gate
     passLaneEmptyChance: 0.45, // the guaranteed-passable lane is empty this often
     fill: { start: 0.5, end: 0.85 }, // chance each other lane holds an obstacle
     typeWeights: { low: 0.3, high: 0.3, block: 0.4 },
     types: {
       // jump over: player feet must be above `height`
-      low: { width: 1.4, height: 1.1, depth: 0.5, pairOffset: 0.38, thickness: 0.22 }, // an orange + purple fan standing together
+      low: { width: 1.2, height: 2.2, depth: 0.6, thickness: 0.22 }, // one handheld fan, orange or purple at random
       // slide under: gap below the beam is `clearance`, shorter than standing, taller than sliding
-      high: { width: 2.0, clearance: 1.15, beamHeight: 1.1, depth: 0.7, pylonWidth: 0.18, pylonHeight: 2.6 },
+      high: { width: 2.0, clearance: 1.15, beamHeight: 2.55, depth: 0.7, pylonWidth: 0.18, pylonHeight: 3.8 },
       // dodge by changing lane
-      block: { width: 1.9, height: 3.0, depth: 2.2 },
+      block: { width: 1.9, height: 4.2, depth: 2.2 }, // taller than the jump apex
     },
     visual: {
       highBeam: 0xff5fa2,
@@ -160,8 +160,9 @@ export const Config = deepFreeze({
   coins: {
     spawnChance: 0.8, // chance a gap between rows holds a coin pattern
     maxActive: 160,
-    radius: 0.42,
-    thickness: 0.1,
+    radius: 0.45, // pickup radius (the logo is ~0.9 wide)
+    thickness: 0.12,
+    size: 0.95, // logo width
     height: 0.95, // coin centre above the road
     spacing: 2.0, // between coins in a pattern
     margin: 4, // keep coins this far from obstacle rows
@@ -169,8 +170,8 @@ export const Config = deepFreeze({
     arcCoins: 6, // coins in the jump-arc pattern
     arcScale: 0.85, // arc height relative to the real jump arc (forgiving)
     patternWeights: { line: 0.45, step: 0.25, arc: 0.3 }, // arc only after a low obstacle
-    color: 0xffc93c,
-    emissive: 0xb8741a,
+    color: 0xf2a46b, // rose gold
+    emissive: 0x9a5224,
     burst: { count: 10, speed: 4.5, life: 0.45, size: 0.22, gravity: 9, max: 80 },
   },
 
@@ -214,6 +215,8 @@ export const Config = deepFreeze({
     cases: {
       lemon: { base: 0xfbeec2, fruit: 0xf6a81e, plate: 0xa9a2ab, lens: 0x1b1626, ring: 0xd9d6dc, flash: 0xfff0d0, text: 0xd9a56a, edge: 0xfbeec2 },
       stripes: { a: 0xd91f35, b: 0xff93a8, plate: 0xf0c9b4, lens: 0x15151a, ring: 0x3a3a42, flash: 0xfff3e0, edge: 0xd91f35 },
+      cheetah: { base: 0x1b1c33, plate: 0xe9d1bd, lens: 0x101015, ring: 0xf0e0cf, flash: 0xffffff, fur: 0xe8b872, spot: 0x4a2a14, cream: 0xf6e3c2, cherry: 0xc4102a, stem: 0x5a3a24, edge: 0x1b1c33 },
+      charm: { base: 0xe9dcc6, edge: 0xe9dcc6, red: 0xd0102a, leaf: 0x4f9a2c, cup: 0xb9dc7a, cupDark: 0x8fc060, silver: 0xb9bcc4, tag: 0xff5fa2, tagLight: 0xffd0e0, croissant: 0xf0953c, croissantDark: 0xd77422, leopard: 0xe8a84a, spot: 0x3a2412, glass: 0x23232a },
       cherry: { a: 0xc5162e, b: 0x6b0f1a, fruit: 0xd01030, shine: 0xffd7de, stem: 0x8aa84a, bow: 0xf0506e, bowDark: 0xc23a56, edge: 0xb3162b },
     },
     fans: {

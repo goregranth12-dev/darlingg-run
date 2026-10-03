@@ -25,14 +25,16 @@ Game states (`Game.state`): `ready` (start screen) -> `running` <-> `paused` (ta
 - `input/`: InputManager (ring-buffer action queue), KeyboardInput, SwipeInput (pointer events), Action enum.
 - `world/`: WorldManager (chunk pool, origin shift, ground), GroundChunk (road + instanced scenery),
   ChunkBuilder (seeded scenery placement), SceneryKit (shared geometry/materials/road texture), LaneSystem, Sky,
-  CaseTextures (canvas-drawn patterns). Buildings are giant phone cases (lemon, red/pink stripes, cherry + bow) standing on
-  edge with the printed back facing the road: one bevelled extruded slab, 3 textured instanced variants, uniform scale.
+  CaseTextures / CasePatterns / CaseDraw (canvas-drawn patterns). Buildings are giant phone cases (lemon, red/pink stripes,
+  cherry + bow, cheetah + cherries, charm stickers) standing on edge with the printed back facing the road: one bevelled
+  extruded slab, 5 textured instanced variants (each chunk shows 3 of them), uniform scale.
 - `obstacles/`: ObstacleManager (row spawning, pooled records), ObstacleRenderer (instanced meshes, slot pools), ObstacleTypes.
-  Types: LOW (jump over: an orange + purple handheld fan standing together, FanGeometry builds them vertex-coloured),
-  HIGH (slide under), BLOCK (change lane). Every row has a guaranteed passable "pass lane"
+  Types: LOW (jump over: one handheld fan, orange or purple at random, 2.2 tall; FanGeometry builds them vertex-coloured),
+  HIGH (slide under; its collision reaches above the jump apex so it cannot be hopped), BLOCK (change lane; taller than the
+  jump apex). Keep `types.high` / `types.block` heights above the jump apex (`v^2 / 2g`) if you tune the jump. Every row has a guaranteed passable "pass lane"
   (never a BLOCK; consecutive pass lanes differ by <= 1) and rows are >= `gapSeconds.min` apart, so a run is always survivable.
   Full-width LOW/HIGH "gates" are also generated. Emits `obstacleRow` (reused payload object).
-- `collectibles/`: CoinManager (pooled instanced spinning coins; lays patterns line/step/arc in the gap after each
+- `collectibles/`: CoinManager (pooled instanced spinning "gg" logo coins, CoinGeometry extrudes the monogram; lays patterns line/step/arc in the gap after each
   `obstacleRow`), CoinBurst (pooled sparkle Points on pickup).
 - `collision/`: CollisionManager (swept AABB vs obstacles -> `playerHit`; coin pickups -> `coinCollected`).
   Player collision height is state-based (standing / sliding), see `Player.height`.

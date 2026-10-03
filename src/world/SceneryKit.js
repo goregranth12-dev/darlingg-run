@@ -60,7 +60,7 @@ export class SceneryKit {
       curveSegments: 8,
     }).translate(0, 0, -c.depth / 2);
     this.caseTextures = makeCaseTextures(config, renderer);
-    const edges = [pal.lemon.edge, pal.stripes.edge, pal.cherry.edge];
+    const edges = [pal.lemon.edge, pal.stripes.edge, pal.cherry.edge, pal.cheetah.edge, pal.charm.edge];
     this.caseMats = this.caseTextures.map((map, i) => [
       new THREE.MeshStandardMaterial({ map, roughness: 0.4 }),
       new THREE.MeshStandardMaterial({ color: edges[i], roughness: 0.45 }),

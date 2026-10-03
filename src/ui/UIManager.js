@@ -3,7 +3,7 @@ import { DebugOverlay } from './DebugOverlay.js';
 const MARKUP = `
   <div class="hud" hidden>
     <div class="hud-score"><span class="hud-label">Score</span><span class="hud-value" data-ref="score">0</span></div>
-    <div class="hud-coins"><i class="coin-icon"></i><span class="hud-value" data-ref="coins">0</span></div>
+    <div class="hud-coins"><i class="coin-icon">gg</i><span class="hud-value" data-ref="coins">0</span></div>
   </div>
   <div class="overlay" data-ref="start">
     <div class="panel">

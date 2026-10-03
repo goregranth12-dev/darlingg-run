@@ -39,8 +39,11 @@ export function populateChunk(chunk, rng, config, lanes) {
 
   const edge = roadHalf + world.sidewalkWidth + s.buildingGap;
   const cs = s.cases;
-  const cases = [m.caseA, m.caseB, m.caseC];
-  const used = [0, 0, 0];
+  const cases = [m.caseA, m.caseB, m.caseC, m.caseD, m.caseE];
+  const used = [0, 0, 0, 0, 0];
+  // Each chunk shows 3 of the 5 case designs: variety along the road, fewer draw calls.
+  const first = rng.int(0, cases.length - 1);
+  const picks = [first, (first + rng.int(1, 4)) % cases.length, (first + 2 + rng.int(0, 2)) % cases.length];
   for (let side = -1; side <= 1; side += 2) {
     const n = rng.int(s.buildingsPerSide.min, s.buildingsPerSide.max);
     const slot = L / n;
@@ -48,13 +51,16 @@ export function populateChunk(chunk, rng, config, lanes) {
       const scale = Math.min(rng.range(cs.scale.min, cs.scale.max), (slot * 0.95) / cs.width);
       const spare = slot - cs.width * scale;
       const z = -L / 2 + (i + 0.5) * slot + rng.range(-1, 1) * spare * 0.5;
-      const v = rng.int(0, 2);
+      const v = picks[rng.int(0, picks.length - 1)];
       // +z face (the printed back) turns toward the road
       const x = side * (edge + (kitThickness(cs) * scale) / 2);
       place(cases[v], used[v]++, x, 0, z, scale, scale, scale, side > 0 ? -Math.PI / 2 : Math.PI / 2);
     }
   }
-  for (let v = 0; v < 3; v++) cases[v].count = used[v];
+  for (let v = 0; v < cases.length; v++) {
+    cases[v].count = used[v];
+    cases[v].visible = used[v] > 0; // skip the draw call for unused designs
+  }
 
   const slots = Math.floor(L / s.lampSpacing);
   let li = 0;

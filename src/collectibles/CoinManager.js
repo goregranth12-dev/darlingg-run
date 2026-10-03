@@ -4,6 +4,7 @@ import { Rng } from '../utils/rng.js';
 import { clamp } from '../utils/math.js';
 import { ObstacleType } from '../obstacles/ObstacleTypes.js';
 import { CoinBurst } from './CoinBurst.js';
+import { buildCoinGeometry } from './CoinGeometry.js';
 import { disposeAll } from '../utils/dispose.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -32,9 +33,9 @@ export class CoinManager {
     const c = this.cfg;
     this.scene = scene;
     this.lanes = lanes;
-    this.geometry = new THREE.CylinderGeometry(c.radius, c.radius, c.thickness, 20).rotateX(Math.PI / 2);
+    this.geometry = buildCoinGeometry(c.size, c.thickness);
     this.material = new THREE.MeshStandardMaterial({
-      color: c.color, emissive: c.emissive, emissiveIntensity: 0.7, roughness: 0.35, metalness: 0.3,
+      color: c.color, emissive: c.emissive, emissiveIntensity: 0.7, roughness: 0.3, metalness: 0.35,
     });
     this.mesh = new THREE.InstancedMesh(this.geometry, this.material, c.maxActive);
     this.mesh.frustumCulled = false;

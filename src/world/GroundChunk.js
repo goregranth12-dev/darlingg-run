@@ -31,6 +31,8 @@ export class GroundChunk {
       caseA: inst(kit.caseGeo, kit.caseMats[0], caps.cases),
       caseB: inst(kit.caseGeo, kit.caseMats[1], caps.cases),
       caseC: inst(kit.caseGeo, kit.caseMats[2], caps.cases),
+      caseD: inst(kit.caseGeo, kit.caseMats[3], caps.cases),
+      caseE: inst(kit.caseGeo, kit.caseMats[4], caps.cases),
       poles: inst(kit.poleGeo, kit.poleMat, caps.lamps),
       heads: inst(kit.boxGeo, kit.lampMat, caps.lamps),
       trunks: inst(kit.poleGeo, kit.trunkMat, caps.trees),

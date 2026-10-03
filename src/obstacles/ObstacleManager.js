@@ -17,7 +17,7 @@ export class ObstacleManager {
     this.bounds = buildBounds(config);
     this.active = [];
     this.pool = new ObjectPool(() => ({
-      type: 0, lane: 0, slot: 0, x: 0, z: 0, halfW: 0, halfD: 0, yMin: 0, yMax: 0,
+      type: 0, variant: 0, lane: 0, slot: 0, x: 0, z: 0, halfW: 0, halfD: 0, yMin: 0, yMax: 0,
     }), this.cfg.poolPerType * 3);
     this.rng = new Rng();
     // Reused payload for the 'obstacleRow' event (read by CoinManager).
@@ -103,6 +103,7 @@ export class ObstacleManager {
     const o = this.pool.acquire();
     const b = this.bounds[type];
     o.type = type;
+    o.variant = type === ObstacleType.LOW ? this.rng.int(0, 1) : 0; // fan colour
     o.lane = lane;
     o.slot = slot;
     o.x = this.lanes.xOf(lane);
@@ -111,13 +112,13 @@ export class ObstacleManager {
     o.halfD = b.halfD;
     o.yMin = b.yMin;
     o.yMax = b.yMax;
-    this.renderer.set(type, slot, o.x, z);
+    this.renderer.set(type, slot, o.x, z, o.variant);
     this.active.push(o);
   }
 
   _remove(index) {
     const o = this.active[index];
-    this.renderer.release(o.type, o.slot);
+    this.renderer.release(o.type, o.slot, o.variant);
     const last = this.active.pop();
     if (index < this.active.length) this.active[index] = last;
     this.pool.release(o);
@@ -128,7 +129,7 @@ export class ObstacleManager {
     for (let i = 0; i < this.active.length; i++) {
       const o = this.active[i];
       o.z += dz;
-      this.renderer.set(o.type, o.slot, o.x, o.z);
+      this.renderer.set(o.type, o.slot, o.x, o.z, o.variant);
     }
     this.renderer.flush();
   }

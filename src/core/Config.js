@@ -84,6 +84,7 @@ export const Config = deepFreeze({
       fov: 54,
     },
     portraitFov: 88, // used when the viewport is narrow
+    portraitLookRaise: 5.5, // portrait: aim the camera higher so the flamingo sits low on screen
     portraitPullback: 0.45, // fractional extra distance in portrait
     portraitBlendRange: 0.5, // aspect span (below 1.0) over which portrait kicks in
   },

@@ -61,7 +61,7 @@ export class CameraRig {
 
     if (this.snap) {
       this.pos.set(targetX, targetY, 0);
-      this.look.set(lookX, c.lookHeight, 0);
+      this.look.set(lookX, c.lookHeight + portrait * c.portraitLookRaise, 0);
       this.fov = c.fov;
       this.snap = false;
     }
@@ -70,7 +70,7 @@ export class CameraRig {
     this.pos.y = damp(this.pos.y, targetY, c.followDamping, dt);
     this.pos.z = player.z + c.offset.z + pullback; // locked: no forward lag at high speed
     this.look.x = damp(this.look.x, lookX, c.followDamping, dt);
-    this.look.y = damp(this.look.y, c.lookHeight + player.y * 0.5, c.followDamping, dt);
+    this.look.y = damp(this.look.y, c.lookHeight + player.y * 0.5 + portrait * c.portraitLookRaise, c.followDamping, dt);
     this.look.z = player.z - c.lookAhead;
 
     const baseFov = lerp(c.fov, c.portraitFov, portrait);

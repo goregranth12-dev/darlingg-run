@@ -1,7 +1,7 @@
 import { Action } from './Action.js';
 
 // Pointer-based swipes. Fires the moment the threshold is crossed within the
-// time limit (not on release), then re-anchors so one touch can chain swipes.
+// time limit (not on release). One touch gives at most one action, however long or fast the swipe.
 export class SwipeInput {
   constructor(target, config, push) {
     this.target = target;
@@ -27,7 +27,7 @@ export class SwipeInput {
       if (target.setPointerCapture) target.setPointerCapture(e.pointerId);
     };
     this._move = (e) => {
-      if (e.pointerId !== this.pointerId) return;
+      if (e.pointerId !== this.pointerId || this.swiped) return; // one swipe per touch
       const dx = e.clientX - this.startX;
       const dy = e.clientY - this.startY;
       const ax = Math.abs(dx);
@@ -41,7 +41,6 @@ export class SwipeInput {
       if (ax > ay) this.push(dx < 0 ? Action.LEFT : Action.RIGHT);
       else this.push(dy < 0 ? Action.JUMP : Action.SLIDE);
       this.swiped = true;
-      this._anchor(e.clientX, e.clientY, e.timeStamp);
     };
     this._up = (e) => {
       if (e.pointerId !== this.pointerId) return;

@@ -82,3 +82,8 @@ Capacitor wraps the Vite build (`capacitor.config.json`, id `com.darlingg.run`, 
 - `npm run android:apk` builds `android/app/build/outputs/apk/debug/app-debug.apk` (needs JDK 17+ and the Android SDK).
 - `.github/workflows/android-apk.yml` builds it on every push and publishes `darlingg-run.apk` to the `apk-latest` release.
 - After web changes: `npm run android:sync` copies `dist/` into the Android project.
+
+## Web install (iPhone / any phone)
+`.github/workflows/pages.yml` deploys `dist/` to GitHub Pages (once Settings > Pages > Source is set to "GitHub Actions"):
+https://goregranth12-dev.github.io/darlingg-run/ . iPhones cannot install APKs; open that link in Safari and use Share > Add to
+Home Screen (manifest + apple-touch-icon are in `public/`).

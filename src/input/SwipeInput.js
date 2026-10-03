@@ -17,7 +17,7 @@ export class SwipeInput {
     this.swiped = false;
 
     this._down = (e) => {
-      if (this.pointerId !== -1) return;
+      // a new touch always starts fresh (a lost pointerup must never lock input)
       this.pointerId = e.pointerId;
       this._anchor(e.clientX, e.clientY, e.timeStamp);
       this.downX = e.clientX;
@@ -55,6 +55,9 @@ export class SwipeInput {
     target.addEventListener('pointermove', this._move);
     target.addEventListener('pointerup', this._up);
     target.addEventListener('pointercancel', this._up);
+    window.addEventListener('pointerup', this._up); // finger lifted outside the canvas
+    window.addEventListener('pointercancel', this._up);
+    window.addEventListener('blur', this._reset = () => (this.pointerId = -1));
     target.addEventListener('contextmenu', this._prevent);
     // iOS Safari: stop pinch-zoom / page drag gestures
     target.addEventListener('touchmove', this._prevent, { passive: false });
@@ -73,6 +76,9 @@ export class SwipeInput {
     t.removeEventListener('pointermove', this._move);
     t.removeEventListener('pointerup', this._up);
     t.removeEventListener('pointercancel', this._up);
+    window.removeEventListener('pointerup', this._up);
+    window.removeEventListener('pointercancel', this._up);
+    window.removeEventListener('blur', this._reset);
     t.removeEventListener('contextmenu', this._prevent);
     t.removeEventListener('touchmove', this._prevent);
     document.removeEventListener('gesturestart', this._prevent);

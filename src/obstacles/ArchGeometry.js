@@ -70,38 +70,79 @@ export function buildArchText(a, pal) {
   return { geo, map };
 }
 
-/** Clusters of roses, hydrangeas, leaves and baby's-breath on the posts and shoulders. */
+function heartShape() {
+  const s = new THREE.Shape();
+  s.moveTo(0.25, 0.25);
+  s.bezierCurveTo(0.25, 0.25, 0.2, 0, 0, 0);
+  s.bezierCurveTo(-0.3, 0, -0.3, 0.35, -0.3, 0.35);
+  s.bezierCurveTo(-0.3, 0.55, -0.1, 0.77, 0.25, 0.95);
+  s.bezierCurveTo(0.6, 0.77, 0.8, 0.55, 0.8, 0.35);
+  s.bezierCurveTo(0.8, 0.35, 0.8, 0, 0.5, 0);
+  s.bezierCurveTo(0.35, 0, 0.25, 0.25, 0.25, 0.25);
+  return s;
+}
+
+/** Puffy glossy heart centred on (x, y), facing +Z, about `size` tall. */
+function heart(x, y, z, size) {
+  const g = new THREE.ExtrudeGeometry(heartShape(), { depth: 0.22, bevelEnabled: true, bevelThickness: 0.16, bevelSize: 0.1, bevelSegments: 2, curveSegments: 8 });
+  g.translate(-0.25, -0.47, -0.11);
+  g.scale(size, size, size);
+  return g.translate(x, y, z);
+}
+
+/** Small ribbon bow: two loops, a knot and two tails. */
+function bow(add, x, y, z, k, hex) {
+  const blob = (rx, ry, rz, dx, dy, dz, roll) =>
+    new THREE.SphereGeometry(1, 8, 6).scale(rx * k, ry * k, rz * k).rotateZ(roll).translate(x + dx * k, y + dy * k, z + dz);
+  for (const side of [-1, 1]) {
+    add(blob(0.1, 0.065, 0.04, side * 0.1, 0.02, 0, side * 0.4), hex); // loops
+    add(blob(0.03, 0.1, 0.025, side * 0.05, -0.1, 0, side * -0.35), hex); // tails
+  }
+  add(blob(0.045, 0.045, 0.045, 0, 0, 0.02, 0), hex); // knot
+}
+
+/**
+ * Pearls, puffy hearts, ribbon bows and tiny beads stacked up the posts and over the
+ * shoulders, like the reference arch. Vertex-coloured, deterministic from the seed.
+ */
 export function buildArchFlowers(a, pal, seed) {
   const rng = new Rng(seed + 31);
   const front = a.depth / 2 + a.bevel;
   const hw = a.width / 2;
   const parts = [];
   const add = (geo, hex) => parts.push(paint(geo, hex));
-  const clusters = [
-    [-hw + a.post * 0.45, a.height - 1.25, 1.0],
-    [-hw + a.post * 0.45, 0.95, 1.15],
-    [hw - a.post * 0.45, a.height - 1.6, 0.95],
-    [hw - a.post * 0.45, 0.7, 0.9],
-  ];
-  for (const [cx, cy, k] of clusters) {
-    for (let i = 0; i < 7; i++) {
-      const x = cx + rng.range(-0.28, 0.28) * k;
-      const y = cy + rng.range(-0.5, 0.5) * k;
-      const r = rng.range(0.12, 0.2) * k;
-      const z = front + r * 0.55;
-      if (i % 3 === 0) {
-        add(ellipsoid(r * 1.1, r * 1.1, r * 0.7, x, y, z, 8), rng.pick(pal.rose));
-        add(new THREE.TorusGeometry(r * 0.55, r * 0.22, 5, 10).translate(x, y, z + r * 0.45), rng.pick(pal.rose));
+
+  const column = (side, y0, y1) => {
+    for (let y = y0; y < y1; y += rng.range(0.3, 0.46)) {
+      const x = side * (hw - a.post * 0.5) + rng.range(-0.14, 0.14) + side * 0.04;
+      const roll = rng.next();
+      if (roll < 0.5) {
+        const r = rng.range(0.13, 0.22);
+        add(ellipsoid(r, r, r, x, y, front + r * 0.6, 12), rng.pick(pal.pearls));
+      } else if (roll < 0.72) {
+        parts.push(paint(heart(x, y, front + 0.06, rng.range(0.34, 0.46)), rng.pick(pal.hearts)));
+      } else if (roll < 0.84) {
+        bow(add, x, y, front + 0.04, rng.range(0.9, 1.2), pal.bow);
       } else {
-        add(ellipsoid(r, r, r * 0.85, x, y, z, 7), rng.pick(pal.hydrangea));
+        for (let i = 0; i < 3; i++) add(ellipsoid(0.05, 0.05, 0.05, x + rng.range(-0.15, 0.15), y + rng.range(-0.12, 0.12), front + 0.05, 8), rng.pick(pal.beads));
       }
     }
-    for (let i = 0; i < 3; i++) {
-      add(ellipsoid(0.1 * k, 0.04 * k, 0.02, cx + rng.range(-0.35, 0.35) * k, cy + rng.range(-0.55, 0.55) * k, front + 0.03, 6, rng.range(-1, 1)), pal.leaf);
+  };
+  column(-1, 0.25, a.height - 1.3);
+  column(1, 0.25, a.height - 1.7);
+  // shoulders: a little crown of pearls and hearts either side of the lettering
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 4; i++) {
+      const ang = Math.PI * (0.08 + i * 0.1) * (side < 0 ? -1 : 1) + (side < 0 ? Math.PI : 0);
+      const x = Math.cos(ang) * (hw - 0.12);
+      const y = a.height - hw + Math.sin(ang) * (hw - 0.12);
+      if (i % 2 === 0) add(ellipsoid(0.16, 0.16, 0.16, x, y, front + 0.1, 12), rng.pick(pal.pearls));
+      else parts.push(paint(heart(x, y, front + 0.06, 0.38), rng.pick(pal.hearts)));
     }
-    for (let i = 0; i < 14; i++) {
-      add(ellipsoid(0.028, 0.028, 0.028, cx + rng.range(-0.4, 0.4) * k, cy + rng.range(-0.65, 0.65) * k, front + rng.range(0.05, 0.16), 4), pal.gyp);
-    }
+  }
+  for (let i = 0; i < 26; i++) {
+    const side = rng.next() < 0.5 ? -1 : 1;
+    add(ellipsoid(0.035, 0.035, 0.035, side * (hw - 0.1) + rng.range(-0.18, 0.18), rng.range(0.15, a.height - 0.6), front + 0.04, 6), rng.pick(pal.beads));
   }
   const merged = mergeGeometries(parts);
   parts.forEach((g) => g.dispose());

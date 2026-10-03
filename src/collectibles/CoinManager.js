@@ -35,7 +35,7 @@ export class CoinManager {
     this.lanes = lanes;
     this.geometry = buildCoinGeometry(c.size, c.thickness, this.config.visual.coin);
     this.material = new THREE.MeshStandardMaterial({
-      vertexColors: true, emissive: c.emissive, emissiveIntensity: 0.3, roughness: 0.28, metalness: 0.3,
+      vertexColors: true, emissive: c.emissive, emissiveIntensity: 0.22, roughness: 0.5, metalness: 0.0,
     });
     this.mesh = new THREE.InstancedMesh(this.geometry, this.material, c.maxActive);
     this.mesh.frustumCulled = false;
@@ -97,16 +97,18 @@ export class CoinManager {
     for (let i = 0; i < n; i++) this._add(i < n / 2 ? xa : xb, c.height, row.z - c.margin - i * c.spacing);
   }
 
-  // Coins tracing the jump arc over a low obstacle in the pass lane.
+  // Coins tracing the jump arc over a low obstacle in the pass lane, evenly spaced.
   _arc(row) {
     const c = this.cfg;
     const j = this.config.jump;
     const air = (2 * j.jumpVelocity) / j.gravity;
+    const length = air * row.speed;
+    const n = clamp(Math.floor(length / c.spacing) + 1, 3, c.maxArcCoins);
     const x = this.lanes.xOf(row.passLane);
-    for (let i = 0; i < c.arcCoins; i++) {
-      const t = (i / (c.arcCoins - 1)) * air;
+    for (let i = 0; i < n; i++) {
+      const t = (i / (n - 1)) * air;
       const lift = (j.jumpVelocity * t - 0.5 * j.gravity * t * t) * c.arcScale;
-      this._add(x, c.height + lift, row.z + (air * row.speed) / 2 - t * row.speed);
+      this._add(x, c.height + lift, row.z + length / 2 - t * row.speed);
     }
   }
 

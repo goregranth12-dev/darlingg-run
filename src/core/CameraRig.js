@@ -42,7 +42,7 @@ export class CameraRig {
     this.target = 1;
   }
 
-  /** Ease back out to the cinematic shot (the horse rescue). */
+  /** Ease out to the outro shot (game over). */
   beginOutro() {
     this.behind = true;
     this.target = 0;

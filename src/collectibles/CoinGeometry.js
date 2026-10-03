@@ -35,7 +35,10 @@ function monogram(width, depth) {
   const parts = shapes.map((shape) =>
     new THREE.ExtrudeGeometry(shape, {
       depth,
-      bevelEnabled: false,
+      bevelEnabled: true,
+      bevelThickness: depth * 0.45,
+      bevelSize: 0.012,
+      bevelSegments: 1,
       curveSegments: 6,
     }),
   );
@@ -56,16 +59,16 @@ function monogram(width, depth) {
  */
 export function buildCoinGeometry(size, thickness, palette) {
   const R = size / 2;
-  const emboss = thickness * 0.3;
+  const emboss = thickness * 0.34;
   const parts = [];
   const add = (geo, hex) => parts.push(paint(geo, hex));
 
   add(new THREE.CylinderGeometry(R, R, thickness, 28).rotateX(Math.PI / 2), palette.rim);
   for (const side of [1, -1]) {
     const z = (side * thickness) / 2;
-    add(new THREE.TorusGeometry(R * 0.92, thickness * 0.22, 4, 28).translate(0, 0, z), palette.rim);
+    add(new THREE.TorusGeometry(R * 0.9, thickness * 0.3, 6, 32).translate(0, 0, z), palette.rim);
     add(new THREE.CylinderGeometry(R * 0.82, R * 0.82, 0.02, 28).rotateX(Math.PI / 2).translate(0, 0, z + side * 0.006), palette.face);
-    add(new THREE.TorusGeometry(R * 0.82, thickness * 0.1, 3, 28).translate(0, 0, z), palette.rim);
+    add(new THREE.TorusGeometry(R * 0.8, thickness * 0.14, 4, 32).translate(0, 0, z), palette.rim);
     const logo = monogram(size * 0.6, emboss);
     if (side < 0) logo.rotateY(Math.PI);
     logo.translate(0, 0, z + side * 0.014);

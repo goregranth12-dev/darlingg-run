@@ -13,14 +13,13 @@ import { CollisionManager } from '../collision/CollisionManager.js';
 import { ScoreManager } from '../score/ScoreManager.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { UIManager } from '../ui/UIManager.js';
-import { HorseChaser } from '../chaser/HorseChaser.js';
 import { Action } from '../input/Action.js';
 
 export const GameState = Object.freeze({
   READY: 'ready',
   RUNNING: 'running',
   PAUSED: 'paused',
-  CAUGHT: 'caught', // crashed: the horse collects the flamingo
+  CRASHED: 'crashed', // just hit something: camera swings round before the game-over screen
   GAMEOVER: 'gameover',
 });
 
@@ -38,7 +37,6 @@ export class Game {
     this.player = new Player(Config, this.bus, this.lanes);
     this.view.scene.add(this.player.group);
     this.cameraRig = new CameraRig(this.view.camera, Config);
-    this.horse = new HorseChaser(this.view.scene, Config);
     this.input = new InputManager(this.view.renderer.domElement, Config);
 
     // gameplay systems (audio is still a stub)
@@ -76,18 +74,15 @@ export class Game {
     this.bus.emit('stateChanged', state);
   }
 
-  /** Opening shot: the horse chases the flamingo on a cinematic camera, waiting for a tap. */
+  /** Opening shot: the flamingo runs on a cinematic camera, waiting for a tap. */
   enterReady() {
     this.resetRun();
     this.cameraRig.setCinematic(true);
-    this.horse.startChase(this.player, this.config.horse.startGap);
     this.setState(GameState.READY);
   }
 
   /** Puts everything back at the start line (also used for restart). */
   resetRun() {
-    this.view.scene.add(this.player.group); // may still be riding the horse
-    this.horse.reset();
     this.player.reset();
     this.world.reset();
     this.managers.forEach((m) => m.reset());
@@ -115,12 +110,10 @@ export class Game {
       p.distance = 0;
       p.speed = this.config.player.baseSpeed;
       this.cameraRig.beginIntro();
-      this.horse.beginRun();
     } else if (this.state === GameState.GAMEOVER) {
       if (this.stateTime < this.config.game.restartDelay) return;
       this.resetRun();
       this.cameraRig.setCinematic(false);
-      this.horse.startChase(this.player, this.config.horse.chaseGap);
     } else {
       return;
     }
@@ -131,9 +124,8 @@ export class Game {
     if (this.state !== GameState.RUNNING) return;
     this.player.die();
     this.bus.emit('gameOver', this.score.score); // ScoreManager finalises the best first
-    this.horse.startRescue(this.player);
-    this.cameraRig.beginOutro(); // swing to the cinematic angle for the rescue
-    this.setState(GameState.CAUGHT);
+    this.cameraRig.beginOutro(); // swing round to the outro angle
+    this.setState(GameState.CRASHED);
   }
 
   pause() {
@@ -162,8 +154,8 @@ export class Game {
         this.input.drain(this._onAction); // start tap
         this.updateReady(dt);
         break;
-      case GameState.CAUGHT:
-        this.updateCaught(dt);
+      case GameState.CRASHED:
+        this.updateCrashed(dt);
         break;
       case GameState.GAMEOVER:
         this.input.drain(this._onAction); // restart tap
@@ -187,35 +179,31 @@ export class Game {
     this.world.update(player.z);
 
     for (let i = 0; i < this.managers.length; i++) this.managers[i].update(dt, player);
-    this.horse.update(dt, player, this.cameraRig.arrived);
 
     this.syncPresentation(dt);
     this.ui.update(dt, this);
   }
 
-  /** Opening shot: the world scrolls, the flamingo runs, the horse gallops after it. */
+  /** Opening shot: the world scrolls and the flamingo runs towards the cinematic camera. */
   updateReady(dt) {
     const player = this.player;
     player.update(dt);
     player.speed = this.config.player.baseSpeed;
     if (-player.z > this.config.world.originShiftThreshold) this.shiftOrigin();
     this.world.update(player.z);
-    this.horse.update(dt, player, false);
     this.syncPresentation(dt);
     this.ui.update(dt, this);
   }
 
-  /** The horse races up, scoops the flamingo and gallops off; then the game-over screen. */
-  updateCaught(dt) {
+  /** The flamingo finishes its stumble while the camera swings round; then the game-over screen. */
+  updateCrashed(dt) {
     this.player.update(dt);
-    this.horse.update(dt, this.player);
-    this.cameraRig.focus = this.horse.focus; // follow the horse once it has the flamingo
     this.coins.burst.update(dt);
     this.syncPresentation(dt);
-    if (this.horse.done) this.setState(GameState.GAMEOVER);
+    if (this.stateTime >= this.config.game.crashSeconds) this.setState(GameState.GAMEOVER);
   }
 
-  /** After the horse has left the world is still; the camera holds. */
+  /** Game-over screen: the world is still; the camera holds the outro angle. */
   updateCrash(dt) {
     this.player.update(dt);
     this.coins.burst.update(dt);
@@ -234,7 +222,6 @@ export class Game {
     const L = this.config.world.chunkLength;
     const dz = Math.floor(-this.player.z / L) * L;
     this.player.shiftOrigin(dz);
-    this.horse.shiftOrigin(dz);
     this.cameraRig.shiftOrigin(dz);
     this.world.shiftOrigin(dz);
     this.view.shiftOrigin(dz);
@@ -252,7 +239,6 @@ export class Game {
     this.managers.forEach((m) => m.dispose());
     this.audio.dispose();
     this.ui.dispose();
-    this.horse.dispose();
     this.player.dispose();
     this.world.dispose();
     this.view.dispose();

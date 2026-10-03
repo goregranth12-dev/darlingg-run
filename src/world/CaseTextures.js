@@ -62,6 +62,10 @@ function drawCherry(ctx, w, h, c) {
     ctx.fillStyle = css(i % 2 === 0 ? c.a : c.b);
     ctx.fillRect((i * w) / n, 0, w / n + 1, h);
   }
+  cameraPlate(ctx, w, h, c);
+  ctx.save();
+  ctx.translate(w * 0.12, h * 0.25); // stickers sit below the camera plate
+  ctx.scale(0.76, 0.76);
   // stem
   ctx.strokeStyle = css(c.stem);
   ctx.lineWidth = w * 0.045;
@@ -110,34 +114,42 @@ function drawCherry(ctx, w, h, c) {
   ctx.arc(cx, cy, r * 0.78, Math.PI * 1.05, Math.PI * 1.35);
   ctx.stroke();
   ctx.globalAlpha = 1;
+  ctx.restore();
 }
 
-/** One texture per phone-case variant: [lemon, stripes, cherry, cheetah, charm]. */
-export function makeCaseTextures(config, renderer) {
+const DESIGNS = ['lemon', 'stripes', 'cherry', 'cheetah', 'charm'];
+
+/** Texture for one phone-case design (index into DESIGNS). */
+export function makeCaseTexture(config, index, anisotropy) {
   const sc = config.scenery.cases;
   const pal = config.visual.cases;
   const w = sc.texturePx;
   const inner = { w: sc.width - 2 * sc.bevel, h: sc.height - 2 * sc.bevel };
   const h = Math.round((w * inner.h) / inner.w);
-  const draws = [
-    (ctx) => drawLemon(ctx, w, h, pal.lemon, config.world.seed),
-    (ctx) => drawStripes(ctx, w, h, pal.stripes),
-    (ctx) => drawCherry(ctx, w, h, pal.cherry),
-    (ctx) => drawCheetah(ctx, w, h, pal.cheetah, config.world.seed),
-    (ctx) => drawCharm(ctx, w, h, pal.charm),
-  ];
+  const seed = config.world.seed;
+  const draws = {
+    lemon: (ctx) => drawLemon(ctx, w, h, pal.lemon, seed),
+    stripes: (ctx) => drawStripes(ctx, w, h, pal.stripes),
+    cherry: (ctx) => drawCherry(ctx, w, h, pal.cherry),
+    cheetah: (ctx) => drawCheetah(ctx, w, h, pal.cheetah, seed),
+    charm: (ctx) => drawCharm(ctx, w, h, pal.charm),
+  };
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  draws[DESIGNS[index]](canvas.getContext('2d'));
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = anisotropy;
+  // extruded cap UVs are the outline's x/y in world units: map them onto 0..1
+  tex.repeat.set(1 / inner.w, 1 / inner.h);
+  tex.offset.set(0.5, -sc.bevel / inner.h);
+  return tex;
+}
+
+export const CASE_DESIGN = Object.freeze({ LEMON: 0, STRIPES: 1, CHERRY: 2, CHEETAH: 3, CHARM: 4 });
+
+export function makeCaseTextures(config, renderer) {
   const aniso = Math.min(config.world.maxAnisotropy, renderer.capabilities.getMaxAnisotropy());
-  return draws.map((draw) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    draw(canvas.getContext('2d'));
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = aniso;
-    // extruded cap UVs are the outline's x/y in world units: map them onto 0..1
-    tex.repeat.set(1 / inner.w, 1 / inner.h);
-    tex.offset.set(0.5, -sc.bevel / inner.h);
-    return tex;
-  });
+  return DESIGNS.map((_, i) => makeCaseTexture(config, i, aniso));
 }

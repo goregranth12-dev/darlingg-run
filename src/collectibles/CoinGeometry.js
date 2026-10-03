@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { paint } from '../utils/geometry.js';
 
 function ring(cx, cy, rx, ry, irx, iry) {
   const s = new THREE.Shape();
@@ -28,18 +29,15 @@ function glyph(ox, oy, k) {
   return shapes;
 }
 
-/**
- * The "gg" monogram as a thin extruded, bevelled medallion, centred on the origin and
- * facing +Z. `size` is the overall width.
- */
-export function buildCoinGeometry(size, thickness) {
+// The "gg" monogram as raised, bevelled letters, centred on the origin, facing +Z.
+function monogram(width, depth) {
   const shapes = [...glyph(-0.2, -0.02, 1), ...glyph(0.14, 0.05, 1.06)];
   const parts = shapes.map((shape) =>
     new THREE.ExtrudeGeometry(shape, {
-      depth: thickness,
+      depth,
       bevelEnabled: true,
-      bevelThickness: thickness * 0.2,
-      bevelSize: 0.012,
+      bevelThickness: depth * 0.25,
+      bevelSize: 0.01,
       bevelSegments: 1,
       curveSegments: 10,
     }),
@@ -49,8 +47,33 @@ export function buildCoinGeometry(size, thickness) {
   geo.computeBoundingBox();
   const box = geo.boundingBox;
   const c = box.getCenter(new THREE.Vector3());
-  geo.translate(-c.x, -c.y, -c.z);
-  const s = size / (box.max.x - box.min.x);
-  geo.scale(s, s, s);
+  geo.translate(-c.x, -c.y, -box.min.z);
+  const k = width / (box.max.x - box.min.x);
+  geo.scale(k, k, k);
   return geo;
+}
+
+/**
+ * A rose-gold "gg" coin: disc with a raised rim and the monogram embossed on both faces,
+ * facing +Z (it spins about Y). Vertex-coloured, `size` is the diameter.
+ */
+export function buildCoinGeometry(size, thickness, palette) {
+  const R = size / 2;
+  const emboss = thickness * 0.35;
+  const parts = [];
+  const add = (geo, hex) => parts.push(paint(geo, hex));
+
+  add(new THREE.CylinderGeometry(R, R, thickness, 36).rotateX(Math.PI / 2), palette.face);
+  for (const side of [1, -1]) {
+    const z = (side * thickness) / 2;
+    add(new THREE.TorusGeometry(R * 0.93, thickness * 0.2, 6, 36).translate(0, 0, z), palette.rim);
+    add(new THREE.TorusGeometry(R * 0.8, thickness * 0.07, 5, 36).translate(0, 0, z), palette.rim);
+    const logo = monogram(size * 0.58, emboss);
+    if (side < 0) logo.rotateY(Math.PI);
+    logo.translate(0, 0, z * 0.98);
+    add(logo, palette.logo);
+  }
+  const merged = mergeGeometries(parts);
+  parts.forEach((g) => g.dispose());
+  return merged;
 }

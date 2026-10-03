@@ -103,7 +103,7 @@ export class ObstacleManager {
     const o = this.pool.acquire();
     const b = this.bounds[type];
     o.type = type;
-    o.variant = type === ObstacleType.LOW ? this.rng.int(0, 1) : 0; // fan colour
+    o.variant = type === ObstacleType.LOW ? this.rng.int(0, 2) : type === ObstacleType.BLOCK ? this.rng.int(0, 1) : 0; // LOW: orange fan / purple fan / bear; BLOCK: cherry / player case
     o.lane = lane;
     o.slot = slot;
     o.x = this.lanes.xOf(lane);

@@ -81,6 +81,10 @@ function dice(ctx, x, y, s, c) {
 export function drawCharm(ctx, w, h, c) {
   ctx.fillStyle = css(c.base);
   ctx.fillRect(0, 0, w, h);
+  cameraPlate(ctx, w, h, c);
+  ctx.save();
+  ctx.translate(w * 0.12, h * 0.27); // stickers sit below the camera plate
+  ctx.scale(0.76, 0.76);
   // cherries with leaves
   ctx.strokeStyle = css(c.leaf);
   ctx.lineWidth = w * 0.035;
@@ -130,10 +134,10 @@ export function drawCharm(ctx, w, h, c) {
   ctx.rotate(0.35);
   roundRect(ctx, -w * 0.15, -h * 0.03, w * 0.3, h * 0.06, w * 0.02, css(c.tag));
   roundRect(ctx, -w * 0.135, -h * 0.022, w * 0.27, h * 0.044, w * 0.015, css(c.tagLight));
-  ctx.fillStyle = css(c.tag);
-  ctx.font = `800 ${Math.round(w * 0.075)}px system-ui, sans-serif`;
+  ctx.fillStyle = css(c.red);
+  ctx.font = `italic 700 ${Math.round(w * 0.085)}px Georgia, 'Times New Roman', serif`;
   ctx.textAlign = 'center';
-  ctx.fillText('PLAYER', 0, h * 0.012);
+  ctx.fillText('Player', 0, h * 0.014);
   ctx.restore();
   // croissant
   ctx.lineCap = 'round';
@@ -184,4 +188,5 @@ export function drawCharm(ctx, w, h, c) {
   ctx.moveTo(w * 0.33, h * 0.895);
   ctx.lineTo(w * 0.36, h * 0.895);
   ctx.stroke();
+  ctx.restore();
 }

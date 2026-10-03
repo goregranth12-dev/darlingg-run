@@ -39,6 +39,7 @@ export function populateChunk(chunk, rng, config, lanes) {
 
   const edge = roadHalf + world.sidewalkWidth + s.buildingGap;
   const cs = s.cases;
+  const thick = kitThickness(cs);
   const cases = [m.caseA, m.caseB, m.caseC, m.caseD, m.caseE];
   const used = [0, 0, 0, 0, 0];
   // Each chunk shows 3 of the 5 case designs: variety along the road, fewer draw calls.
@@ -48,13 +49,16 @@ export function populateChunk(chunk, rng, config, lanes) {
     const n = rng.int(s.buildingsPerSide.min, s.buildingsPerSide.max);
     const slot = L / n;
     for (let i = 0; i < n; i++) {
-      const scale = Math.min(rng.range(cs.scale.min, cs.scale.max), (slot * 0.95) / cs.width);
-      const spare = slot - cs.width * scale;
-      const z = -L / 2 + (i + 0.5) * slot + rng.range(-1, 1) * spare * 0.5;
+      // face turned `turn` rad from the road towards the oncoming player
+      const sinT = Math.sin(cs.turn);
+      const cosT = Math.cos(cs.turn);
+      const alongZ = cs.width * cosT + thick * sinT; // footprint along the road at scale 1
+      const scale = Math.min(rng.range(cs.scale.min, cs.scale.max), (slot * 0.95) / alongZ);
+      const z = -L / 2 + (i + 0.5) * slot + rng.range(-1, 1) * (slot - alongZ * scale) * 0.5;
       const v = picks[rng.int(0, picks.length - 1)];
-      // +z face (the printed back) turns toward the road
-      const x = side * (edge + (kitThickness(cs) * scale) / 2);
-      place(cases[v], used[v]++, x, 0, z, scale, scale, scale, side > 0 ? -Math.PI / 2 : Math.PI / 2);
+      const x = side * (edge + scale * ((cs.width / 2) * sinT + (thick / 2) * cosT));
+      const ry = side * -(Math.PI / 2 - cs.turn);
+      place(cases[v], used[v]++, x, 0, z, scale, scale, scale, ry);
     }
   }
   for (let v = 0; v < cases.length; v++) {

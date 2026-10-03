@@ -80,8 +80,12 @@ export const Config = deepFreeze({
     groundSize: 600,
     roadDash: 2.5, // lane-dash length and gap (chunkLength must be a multiple of dash+gap)
     roadDashGap: 2.5,
-    roadLineWidth: 0.12,
-    roadTexturePxPerUnit: 24,
+    roadLineWidth: 0.24,
+    roadRailWidth: 0.3, // pink edge rails
+    roadTexturePxPerUnit: 40,
+    roadCells: 8, // pink fur "patches" per chunk-length tile
+    roadSeamWidth: 10, // beige seam half-width between patches (px)
+    roadHairs: 7000, // short fur strokes drawn over the patches
     maxAnisotropy: 8,
   },
 
@@ -97,6 +101,7 @@ export const Config = deepFreeze({
       bevelSegments: 2,
       corner: 1.1, // corner radius of the case outline
       scale: { min: 1.0, max: 2.0 }, // uniform, keeps phone proportions
+      turn: 0.5, // radians the printed face is turned from the road towards the oncoming player
       texturePx: 384, // texture width in px (height follows the aspect ratio)
     },
     lampSpacing: 10,
@@ -129,31 +134,32 @@ export const Config = deepFreeze({
     maxPixelRatio: 2,
   },
 
+  collision: {
+    graze: 0.22, // overlap shallower than this on any axis is a near-miss and does not count
+  },
+
   obstacles: {
     seed: 0, // 0 = random every run
     startDistance: 70, // first row this far ahead of the start
     spawnAhead: 125, // rows spawn this far in front of the player
     despawnBehind: 14, // and are recycled this far behind
     poolPerType: 30, // pooled instances per obstacle type
-    gapSeconds: { start: 2.0, min: 1.2 }, // time between rows, shrinks with speed
+    gapSeconds: { start: 2.2, min: 1.3 }, // time between rows, shrinks with speed
     wideGateChance: 0.14, // chance a row is a full-width jump/slide gate
-    passLaneEmptyChance: 0.45, // the guaranteed-passable lane is empty this often
-    fill: { start: 0.5, end: 0.85 }, // chance each other lane holds an obstacle
+    passLaneEmptyChance: 0.5, // the guaranteed-passable lane is empty this often
+    fill: { start: 0.42, end: 0.78 }, // chance each other lane holds an obstacle
     typeWeights: { low: 0.3, high: 0.3, block: 0.4 },
     types: {
       // jump over: player feet must be above `height`
-      low: { width: 1.2, height: 2.2, depth: 0.6, thickness: 0.22 }, // one handheld fan, orange or purple at random
+      low: { width: 1.3, height: 2.2, depth: 0.6, thickness: 0.22 }, // jump over: orange fan, purple fan or leather bear (random)
       // slide under: gap below the beam is `clearance`, shorter than standing, taller than sliding
       high: { width: 2.0, clearance: 1.15, beamHeight: 2.55, depth: 0.7, pylonWidth: 0.18, pylonHeight: 3.8 },
       // dodge by changing lane
-      block: { width: 1.9, height: 4.2, depth: 2.2 }, // taller than the jump apex
+      block: { width: 1.8, height: 4.2, depth: 0.8 }, // standing phone case (cherry or player), taller than the jump apex
     },
     visual: {
       highBeam: 0xff5fa2,
       highPylon: 0x2a2838,
-      block: 0xe8584f,
-      blockRib: 0x9c2f3a,
-      texturePx: 64,
     },
   },
 
@@ -162,7 +168,7 @@ export const Config = deepFreeze({
     maxActive: 160,
     radius: 0.45, // pickup radius (the logo is ~0.9 wide)
     thickness: 0.12,
-    size: 0.95, // logo width
+    size: 0.95, // coin diameter
     height: 0.95, // coin centre above the road
     spacing: 2.0, // between coins in a pattern
     margin: 4, // keep coins this far from obstacle rows
@@ -208,17 +214,18 @@ export const Config = deepFreeze({
     hemiSky: 0xa3a8ff,
     hemiGround: 0x3b2a4d,
     sunLight: 0xffd2a1,
-    ground: 0x211a30,
-    road: 0x2c2d3d,
-    roadLine: 0xf2eedd,
-    sidewalk: 0x5d5a74,
+    ground: 0x5c2748,
+    road: { pink: 0xe9709f, pinkDark: 0xd04a82, pinkLight: 0xf79ac0, beige: 0xf8e8c8, dash: 0xffd9e6, dashShadow: 0xb8386a, rail: 0xf06a9a, railLight: 0xffa6c6 },
+    sidewalk: 0xf3a9c3,
     cases: {
       lemon: { base: 0xfbeec2, fruit: 0xf6a81e, plate: 0xa9a2ab, lens: 0x1b1626, ring: 0xd9d6dc, flash: 0xfff0d0, text: 0xd9a56a, edge: 0xfbeec2 },
       stripes: { a: 0xd91f35, b: 0xff93a8, plate: 0xf0c9b4, lens: 0x15151a, ring: 0x3a3a42, flash: 0xfff3e0, edge: 0xd91f35 },
       cheetah: { base: 0x1b1c33, plate: 0xe9d1bd, lens: 0x101015, ring: 0xf0e0cf, flash: 0xffffff, fur: 0xe8b872, spot: 0x4a2a14, cream: 0xf6e3c2, cherry: 0xc4102a, stem: 0x5a3a24, edge: 0x1b1c33 },
-      charm: { base: 0xe9dcc6, edge: 0xe9dcc6, red: 0xd0102a, leaf: 0x4f9a2c, cup: 0xb9dc7a, cupDark: 0x8fc060, silver: 0xb9bcc4, tag: 0xff5fa2, tagLight: 0xffd0e0, croissant: 0xf0953c, croissantDark: 0xd77422, leopard: 0xe8a84a, spot: 0x3a2412, glass: 0x23232a },
-      cherry: { a: 0xc5162e, b: 0x6b0f1a, fruit: 0xd01030, shine: 0xffd7de, stem: 0x8aa84a, bow: 0xf0506e, bowDark: 0xc23a56, edge: 0xb3162b },
+      charm: { plate: 0xc9ccd2, lens: 0x14141a, ring: 0x8e9096, flash: 0xf4f4f6, base: 0xe9dcc6, edge: 0xe9dcc6, red: 0xd0102a, leaf: 0x4f9a2c, cup: 0xb9dc7a, cupDark: 0x8fc060, silver: 0xb9bcc4, tag: 0xff5fa2, tagLight: 0xffd0e0, croissant: 0xf0953c, croissantDark: 0xd77422, leopard: 0xe8a84a, spot: 0x3a2412, glass: 0x23232a },
+      cherry: { plate: 0xc9ccd2, lens: 0x14141a, ring: 0x8e9096, flash: 0xf4f4f6, a: 0xe0304a, b: 0x9d0d20, fruit: 0xd01030, shine: 0xffd7de, stem: 0x8aa84a, bow: 0xf0506e, bowDark: 0xc23a56, edge: 0xb3162b },
     },
+    coin: { face: 0xeea068, rim: 0xffbf8f, logo: 0xffcfab }, // rose-gold coin tones
+    bear: { leather: 0xc0652b, snout: 0xf2e2c4, dark: 0x14110f, gold: 0xe6a77a },
     fans: {
       dark: 0x1c1b22,
       orange: { body: 0xff9a3c, ring: 0xf26a1b, hub: 0xffb35c, spoke: 0xf0a24a },

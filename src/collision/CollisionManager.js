@@ -16,6 +16,7 @@ export class CollisionManager {
   update(dt, player) {
     if (!player.sm.alive) return;
     const p = this.config.player;
+    const g = this.config.collision.graze; // overlaps shallower than this are near-misses
     const px = player.x;
     const feet = player.y;
     const head = feet + player.height;
@@ -26,9 +27,9 @@ export class CollisionManager {
     const obs = this.obstacles.active;
     for (let i = 0; i < obs.length; i++) {
       const o = obs[i];
-      if (o.z + o.halfD < zMin || o.z - o.halfD > zMax) continue;
-      if (Math.abs(px - o.x) >= p.halfWidth + o.halfW) continue;
-      if (feet >= o.yMax || head <= o.yMin) continue;
+      if (o.z + o.halfD - g < zMin || o.z - o.halfD + g > zMax) continue;
+      if (Math.abs(px - o.x) >= p.halfWidth + o.halfW - g) continue;
+      if (feet >= o.yMax - g || head <= o.yMin + g) continue;
       // Frontal hit: stop right in front of the obstacle instead of inside it.
       if (player.prevZ - p.halfDepth >= o.z + o.halfD - 0.001) player.z = o.z + o.halfD + p.halfDepth;
       this.bus.emit('playerHit', o);

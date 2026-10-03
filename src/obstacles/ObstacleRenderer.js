@@ -2,63 +2,58 @@ import * as THREE from 'three';
 import { ObstacleType } from './ObstacleTypes.js';
 import { disposeAll } from '../utils/dispose.js';
 import { buildFanGeometry } from './FanGeometry.js';
+import { buildBearGeometry } from './BearGeometry.js';
+import { buildCaseGeometry, caseThickness } from '../world/CaseGeometry.js';
+import { makeCaseTexture, CASE_DESIGN } from '../world/CaseTextures.js';
 
 const dummy = new THREE.Object3D();
 
-const hex = (c) => `#${c.toString(16).padStart(6, '0')}`;
-
-function canvasTexture(size, draw) {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
-  draw(canvas.getContext('2d'), size);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  return tex;
-}
-
-// Draws every obstacle as instanced boxes (a handful of draw calls total).
-// Each type owns a fixed slot pool; unused slots are zero-scaled.
+// Draws every obstacle as instanced meshes (a handful of draw calls total).
+// Each type owns a fixed slot pool; unused slots are zero-scaled. A slot's `variant`
+// picks the look: LOW = orange fan / purple fan / bear, BLOCK = cherry / player case.
 export class ObstacleRenderer {
-  constructor(scene, config) {
+  constructor(scene, config, anisotropy = 4) {
     this.scene = scene;
     this.cfg = config.obstacles;
     const { types, visual: v, poolPerType: cap } = this.cfg;
+    this.t = types;
     this.cap = cap;
     this.dirty = false;
 
-    const box = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
-    this.geometry = box;
-    const ribs = canvasTexture(v.texturePx, (ctx, s) => {
-      ctx.fillStyle = hex(v.block);
-      ctx.fillRect(0, 0, s, s);
-      ctx.fillStyle = hex(v.blockRib);
-      for (let i = 0; i < 4; i++) ctx.fillRect(i * (s / 4), 0, s / 16, s);
-    });
     const fans = config.visual.fans;
-    this.fanGeos = [
-      buildFanGeometry(fans.orange, fans.dark, types.low.thickness),
-      buildFanGeometry(fans.purple, fans.dark, types.low.thickness),
+    const th = types.low.thickness;
+    this.geos = [
+      buildFanGeometry(fans.orange, fans.dark, th),
+      buildFanGeometry(fans.purple, fans.dark, th),
+      buildBearGeometry(config.visual.bear),
+      new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), // beam + pylons
+      buildCaseGeometry(config),
     ];
-    const fanMat = () => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, metalness: 0.1 });
+    const [fanA, fanB, bear, box, caseGeo] = this.geos;
+    const toy = () => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, metalness: 0.08 });
+    this.textures = [CASE_DESIGN.CHERRY, CASE_DESIGN.CHARM].map((d) => makeCaseTexture(config, d, anisotropy));
+    this.caseMats = this.textures.map((map) => [
+      new THREE.MeshStandardMaterial({ map, roughness: 0.4 }),
+      new THREE.MeshStandardMaterial({ color: map === this.textures[0] ? config.visual.cases.cherry.edge : config.visual.cases.charm.edge, roughness: 0.45 }),
+    ]);
     this.materials = [
-      fanMat(),
-      fanMat(),
+      toy(),
+      toy(),
+      toy(),
       new THREE.MeshStandardMaterial({ color: v.highBeam, emissive: v.highBeam, emissiveIntensity: 0.45, roughness: 0.5 }),
       new THREE.MeshStandardMaterial({ color: v.highPylon, roughness: 0.6 }),
-      new THREE.MeshStandardMaterial({ map: ribs, roughness: 0.75 }),
     ];
-    this.textures = [ribs];
-    const [mFanA, mFanB, mBeam, mPylon, mBlock] = this.materials;
-
+    const [mFanA, mFanB, mBear, mBeam, mPylon] = this.materials;
+    // a LOW slot draws in exactly one of these three meshes (the others hold a zero-scale matrix)
+    this.lowMeshes = [this._mesh(fanA, mFanA, cap), this._mesh(fanB, mFanB, cap), this._mesh(bear, mBear, cap)];
+    this.blockMeshes = this.caseMats.map((mat) => this._mesh(caseGeo, mat, cap));
     this.meshes = {
-      fanOrange: this._mesh(mFanA, cap, this.fanGeos[0]),
-      fanPurple: this._mesh(mFanB, cap, this.fanGeos[1]),
-      highBeam: this._mesh(mBeam, cap),
-      highPylons: this._mesh(mPylon, cap * 2),
-      block: this._mesh(mBlock, cap),
+      highBeam: this._mesh(box, mBeam, cap),
+      highPylons: this._mesh(box, mPylon, cap * 2),
     };
-    this.t = types;
+    this.blockScale = types.block.height / config.scenery.cases.height; // case slab scaled to block size
+    this.lowScale = types.low.height;
+    this.all = [...this.lowMeshes, ...this.blockMeshes, ...Object.values(this.meshes)];
 
     this.inUse = [new Uint8Array(cap), new Uint8Array(cap), new Uint8Array(cap)];
     this.free = [[], [], []];
@@ -68,7 +63,7 @@ export class ObstacleRenderer {
     this.flush();
   }
 
-  _mesh(material, count, geometry = this.geometry) {
+  _mesh(geometry, material, count) {
     const mesh = new THREE.InstancedMesh(geometry, material, count);
     mesh.frustumCulled = false;
     this.scene.add(mesh);
@@ -79,8 +74,7 @@ export class ObstacleRenderer {
     dummy.position.set(0, -1000, 0);
     dummy.scale.setScalar(0);
     dummy.updateMatrix();
-    for (const key in this.meshes) {
-      const m = this.meshes[key];
+    for (const m of this.all) {
       for (let i = 0; i < m.count; i++) m.setMatrixAt(i, dummy.matrix);
       m.instanceMatrix.needsUpdate = true;
     }
@@ -101,7 +95,7 @@ export class ObstacleRenderer {
     this.free[type].push(slot);
   }
 
-  /** Positions the obstacle in `slot` at lane x / world z (variant picks the fan colour). */
+  /** Positions the obstacle in `slot` at lane x / world z. */
   set(type, slot, x, z, variant = 0) {
     this._write(type, slot, x, z, false, variant);
   }
@@ -114,24 +108,24 @@ export class ObstacleRenderer {
   }
 
   _write(type, slot, x, z, hidden, variant) {
-    const k = hidden ? 0 : 1;
-    const m = this.meshes;
     const t = this.t;
     if (type === ObstacleType.LOW) {
-      const o = t.low;
-      const h = o.height * k;
-      // one fan per slot, orange or purple; the other mesh's matrix for this slot stays hidden
-      this._put(m.fanOrange, slot, x, 0, z, variant === 0 ? h : 0, variant === 0 ? h : 0, variant === 0 ? h : 0);
-      this._put(m.fanPurple, slot, x, 0, z, variant === 1 ? h : 0, variant === 1 ? h : 0, variant === 1 ? h : 0);
+      for (let k = 0; k < 3; k++) {
+        const s = !hidden && k === variant ? this.lowScale : 0;
+        this._put(this.lowMeshes[k], slot, x, 0, z, s, s, s);
+      }
     } else if (type === ObstacleType.HIGH) {
       const o = t.high;
-      this._put(m.highBeam, slot, x, o.clearance, z, o.width * k, o.beamHeight * k, o.depth * k);
+      const k = hidden ? 0 : 1;
+      this._put(this.meshes.highBeam, slot, x, o.clearance, z, o.width * k, o.beamHeight * k, o.depth * k);
       const off = o.width / 2 - o.pylonWidth / 2;
-      this._put(m.highPylons, slot * 2, x - off, 0, z, o.pylonWidth * k, o.pylonHeight * k, o.depth * 0.8 * k);
-      this._put(m.highPylons, slot * 2 + 1, x + off, 0, z, o.pylonWidth * k, o.pylonHeight * k, o.depth * 0.8 * k);
+      this._put(this.meshes.highPylons, slot * 2, x - off, 0, z, o.pylonWidth * k, o.pylonHeight * k, o.depth * 0.8 * k);
+      this._put(this.meshes.highPylons, slot * 2 + 1, x + off, 0, z, o.pylonWidth * k, o.pylonHeight * k, o.depth * 0.8 * k);
     } else {
-      const o = t.block;
-      this._put(m.block, slot, x, 0, z, o.width * k, o.height * k, o.depth * k);
+      for (let k = 0; k < 2; k++) {
+        const s = !hidden && k === variant ? this.blockScale : 0;
+        this._put(this.blockMeshes[k], slot, x, 0, z, s, s, s);
+      }
     }
     this.dirty = true;
   }
@@ -139,25 +133,26 @@ export class ObstacleRenderer {
   flush() {
     if (!this.dirty) return;
     this.dirty = false;
-    for (const key in this.meshes) this.meshes[key].instanceMatrix.needsUpdate = true;
+    for (const m of this.all) m.instanceMatrix.needsUpdate = true;
     // only draw up to the highest slot in use (idle slots are zero-scale but still cost GPU time)
-    const m = this.meshes;
     const hi = this.inUse.map((used) => {
       let n = used.length;
       while (n > 0 && !used[n - 1]) n--;
       return n;
     });
-    m.fanOrange.count = m.fanPurple.count = hi[ObstacleType.LOW];
-    m.highBeam.count = hi[ObstacleType.HIGH];
-    m.highPylons.count = hi[ObstacleType.HIGH] * 2;
-    m.block.count = hi[ObstacleType.BLOCK];
+    const low = hi[ObstacleType.LOW];
+    const block = hi[ObstacleType.BLOCK];
+    this.lowMeshes.forEach((m) => (m.count = low));
+    this.blockMeshes.forEach((m) => (m.count = block));
+    this.meshes.highBeam.count = hi[ObstacleType.HIGH];
+    this.meshes.highPylons.count = hi[ObstacleType.HIGH] * 2;
   }
 
   dispose() {
-    for (const key in this.meshes) {
-      this.scene.remove(this.meshes[key]);
-      this.meshes[key].dispose();
+    for (const m of this.all) {
+      this.scene.remove(m);
+      m.dispose();
     }
-    disposeAll([this.geometry, ...this.fanGeos, ...this.materials, ...this.textures]);
+    disposeAll([...this.geos, ...this.materials, ...this.caseMats.flat(), ...this.textures]);
   }
 }

@@ -27,17 +27,20 @@ Game states (`Game.state`): `ready` (start screen) -> `running` <-> `paused` (ta
   ChunkBuilder (seeded scenery placement), SceneryKit (shared geometry/materials/road texture), LaneSystem, Sky,
   CaseTextures / CasePatterns / CaseDraw (canvas-drawn patterns). Buildings are giant phone cases (lemon, red/pink stripes,
   cherry + bow, cheetah + cherries, charm stickers) standing on edge with the printed back facing the road: one bevelled
-  extruded slab, 5 textured instanced variants (each chunk shows 3 of them), uniform scale.
+  extruded slab (CaseGeometry), 5 textured instanced variants (each chunk shows 3 of them), uniform scale, turned
+  `scenery.cases.turn` rad towards the oncoming player. The road is a procedural pink "fur" Voronoi texture with beige seams,
+  light-pink dashes and pink rails (RoadTexture).
 - `obstacles/`: ObstacleManager (row spawning, pooled records), ObstacleRenderer (instanced meshes, slot pools), ObstacleTypes.
-  Types: LOW (jump over: one handheld fan, orange or purple at random, 2.2 tall; FanGeometry builds them vertex-coloured),
-  HIGH (slide under; its collision reaches above the jump apex so it cannot be hopped), BLOCK (change lane; taller than the
-  jump apex). Keep `types.high` / `types.block` heights above the jump apex (`v^2 / 2g`) if you tune the jump. Every row has a guaranteed passable "pass lane"
+  Types: LOW (jump over, random variant: orange fan / purple fan / leather bear, 2.2 tall; FanGeometry + BearGeometry,
+  vertex-coloured), HIGH (slide under; its collision reaches above the jump apex so it cannot be hopped), BLOCK (change lane;
+  a standing phone case, cherry or player design, taller than the jump apex). Obstacle `variant` is chosen at spawn. Keep `types.high` / `types.block` heights above the jump apex (`v^2 / 2g`) if you tune the jump. Every row has a guaranteed passable "pass lane"
   (never a BLOCK; consecutive pass lanes differ by <= 1) and rows are >= `gapSeconds.min` apart, so a run is always survivable.
   Full-width LOW/HIGH "gates" are also generated. Emits `obstacleRow` (reused payload object).
-- `collectibles/`: CoinManager (pooled instanced spinning "gg" logo coins, CoinGeometry extrudes the monogram; lays patterns line/step/arc in the gap after each
+- `collectibles/`: CoinManager (pooled instanced spinning "gg" logo coins, CoinGeometry builds a rose-gold coin with the gg monogram embossed on both faces; lays patterns line/step/arc in the gap after each
   `obstacleRow`), CoinBurst (pooled sparkle Points on pickup).
 - `collision/`: CollisionManager (swept AABB vs obstacles -> `playerHit`; coin pickups -> `coinCollected`).
-  Player collision height is state-based (standing / sliding), see `Player.height`.
+  Player collision height is state-based (standing / sliding), see `Player.height`. `collision.graze` forgives overlaps
+  shallower than that on any axis (near-misses pass; clear contact ends the run).
 - `score/`: ScoreManager (distance + coins, best score in localStorage under `score.storageKey`).
 - `audio/`: AudioManager is still a stub (M5).
 - `ui/`: UIManager (HUD, start + game-over screens, DOM only), DebugOverlay.

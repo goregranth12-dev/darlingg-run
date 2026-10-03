@@ -1,18 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { paint } from '../utils/geometry.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-
-const color = new THREE.Color();
-
-function paint(geometry, hex) {
-  const g = geometry.index ? geometry.toNonIndexed() : geometry;
-  const n = g.attributes.position.count;
-  const colors = new Float32Array(n * 3);
-  color.setHex(hex);
-  for (let i = 0; i < n; i++) color.toArray(colors, i * 3);
-  g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  return g;
-}
 
 /**
  * A chunky handheld fan standing upright, facing +Z, 1 unit tall (scale it).

@@ -3,22 +3,23 @@ import * as THREE from 'three';
 const dummy = new THREE.Object3D();
 const color = new THREE.Color();
 
-const place = (mesh, i, x, y, z, sx, sy, sz) => {
+const place = (mesh, i, x, y, z, sx, sy, sz, ry = 0) => {
   dummy.position.set(x, y, z);
+  dummy.rotation.set(0, ry, 0);
   dummy.scale.set(sx, sy, sz);
   dummy.updateMatrix();
   mesh.setMatrixAt(i, dummy.matrix);
 };
 
 const tint = (mesh, i, hex) => mesh.setColorAt(i, color.setHex(hex));
+const kitThickness = (cs) => cs.depth + 2 * cs.bevel;
 
 /** Instance capacities needed per chunk, derived from Config. */
 export function instanceCaps(config) {
   const s = config.scenery;
   const lamps = Math.ceil(config.world.chunkLength / s.lampSpacing) * 2;
   return {
-    buildings: s.maxInstancesPerSide * 2,
-    signs: s.maxInstancesPerSide * 2,
+    cases: s.maxInstancesPerSide * 2,
     trees: s.maxInstancesPerSide * 2,
     lamps,
   };
@@ -37,29 +38,23 @@ export function populateChunk(chunk, rng, config, lanes) {
   m.sidewalks.instanceMatrix.needsUpdate = true;
 
   const edge = roadHalf + world.sidewalkWidth + s.buildingGap;
-  let bi = 0;
-  let si = 0;
+  const cs = s.cases;
+  const cases = [m.caseA, m.caseB, m.caseC];
+  const used = [0, 0, 0];
   for (let side = -1; side <= 1; side += 2) {
     const n = rng.int(s.buildingsPerSide.min, s.buildingsPerSide.max);
     const slot = L / n;
     for (let i = 0; i < n; i++) {
-      const along = Math.min(rng.range(s.buildingWidth.min, s.buildingWidth.max), slot * 0.95);
-      const depth = rng.range(s.buildingDepth.min, s.buildingDepth.max);
-      const h = rng.range(s.buildingHeight.min, s.buildingHeight.max);
-      const z = -L / 2 + (i + 0.5) * slot + rng.range(-1, 1) * (slot - along) * 0.5;
-      place(m.buildings, bi, side * (edge + depth / 2), 0, z, depth, h, along);
-      tint(m.buildings, bi, rng.pick(visual.buildings));
-      bi++;
-      if (rng.next() < s.signChance) {
-        const y = rng.range(2.5, Math.max(3, Math.min(h - 1, 9)));
-        place(m.signs, si, side * (edge - s.signSize.d / 2), y, z, s.signSize.d, s.signSize.h, s.signSize.w);
-        tint(m.signs, si, rng.pick(visual.signs));
-        si++;
-      }
+      const scale = Math.min(rng.range(cs.scale.min, cs.scale.max), (slot * 0.95) / cs.width);
+      const spare = slot - cs.width * scale;
+      const z = -L / 2 + (i + 0.5) * slot + rng.range(-1, 1) * spare * 0.5;
+      const v = rng.int(0, 2);
+      // +z face (the printed back) turns toward the road
+      const x = side * (edge + (kitThickness(cs) * scale) / 2);
+      place(cases[v], used[v]++, x, 0, z, scale, scale, scale, side > 0 ? -Math.PI / 2 : Math.PI / 2);
     }
   }
-  m.buildings.count = bi;
-  m.signs.count = si;
+  for (let v = 0; v < 3; v++) cases[v].count = used[v];
 
   const slots = Math.floor(L / s.lampSpacing);
   let li = 0;

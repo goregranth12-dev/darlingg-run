@@ -34,8 +34,8 @@ export const Config = deepFreeze({
   },
 
   jump: {
-    jumpVelocity: 10.5,
-    gravity: 32,
+    jumpVelocity: 11.5,
+    gravity: 34,
     fastFallVelocity: -24, // downward speed when pressing down mid-air
     coyoteTimeMs: 90, // grace after leaving the ground
     inputBufferMs: 150, // jump pressed this long before landing still fires
@@ -87,12 +87,18 @@ export const Config = deepFreeze({
 
   scenery: {
     buildingsPerSide: { min: 3, max: 5 },
-    buildingWidth: { min: 5, max: 9 },
-    buildingDepth: { min: 6, max: 12 },
-    buildingHeight: { min: 6, max: 26 },
     buildingGap: 1.2, // between sidewalk and building
-    signChance: 0.7,
-    signSize: { w: 3, h: 0.5, d: 0.2 },
+    // Giant phone cases standing on edge, back (pattern + camera plate) facing the road.
+    cases: {
+      width: 4.4,
+      height: 10,
+      depth: 1.1, // flat thickness; bevel adds to both sides
+      bevel: 0.3,
+      bevelSegments: 2,
+      corner: 1.1, // corner radius of the case outline
+      scale: { min: 1.0, max: 2.0 }, // uniform, keeps phone proportions
+      texturePx: 384, // texture width in px (height follows the aspect ratio)
+    },
     lampSpacing: 10,
     lampHeight: 4.6,
     lampArm: 0.9,
@@ -136,16 +142,13 @@ export const Config = deepFreeze({
     typeWeights: { low: 0.3, high: 0.3, block: 0.4 },
     types: {
       // jump over: player feet must be above `height`
-      low: { width: 1.9, height: 0.85, depth: 0.6, capHeight: 0.1 },
+      low: { width: 1.4, height: 1.1, depth: 0.5, pairOffset: 0.38, thickness: 0.22 }, // an orange + purple fan standing together
       // slide under: gap below the beam is `clearance`, shorter than standing, taller than sliding
       high: { width: 2.0, clearance: 1.15, beamHeight: 1.1, depth: 0.7, pylonWidth: 0.18, pylonHeight: 2.6 },
       // dodge by changing lane
       block: { width: 1.9, height: 3.0, depth: 2.2 },
     },
     visual: {
-      lowStripeA: 0xffc93c,
-      lowStripeB: 0x2a2838,
-      lowCap: 0xff8a3c,
       highBeam: 0xff5fa2,
       highPylon: 0x2a2838,
       block: 0xe8584f,
@@ -208,8 +211,16 @@ export const Config = deepFreeze({
     road: 0x2c2d3d,
     roadLine: 0xf2eedd,
     sidewalk: 0x5d5a74,
-    buildings: [0x3b3f63, 0x4a3f6b, 0x2f4d6b, 0x5a4570, 0x35546a, 0x483a5e],
-    signs: [0x32e6c8, 0xff5fa2, 0xffd25a, 0x7a8cff],
+    cases: {
+      lemon: { base: 0xfbeec2, fruit: 0xf6a81e, plate: 0xa9a2ab, lens: 0x1b1626, ring: 0xd9d6dc, flash: 0xfff0d0, text: 0xd9a56a, edge: 0xfbeec2 },
+      stripes: { a: 0xd91f35, b: 0xff93a8, plate: 0xf0c9b4, lens: 0x15151a, ring: 0x3a3a42, flash: 0xfff3e0, edge: 0xd91f35 },
+      cherry: { a: 0xc5162e, b: 0x6b0f1a, fruit: 0xd01030, shine: 0xffd7de, stem: 0x8aa84a, bow: 0xf0506e, bowDark: 0xc23a56, edge: 0xb3162b },
+    },
+    fans: {
+      dark: 0x1c1b22,
+      orange: { body: 0xff9a3c, ring: 0xf26a1b, hub: 0xffb35c, spoke: 0xf0a24a },
+      purple: { body: 0xc79be8, ring: 0xa56ad6, hub: 0xd8b6f2, spoke: 0xe3a76c },
+    },
     lampPole: 0x2a2838,
     lampLight: 0xffe3a8,
     trunk: 0x4a3a35,

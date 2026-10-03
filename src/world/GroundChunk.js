@@ -28,8 +28,9 @@ export class GroundChunk {
     };
     this.meshes = {
       sidewalks: inst(kit.boxGeo, kit.sidewalkMat, 2),
-      buildings: inst(kit.boxGeo, kit.buildingMat, caps.buildings, true),
-      signs: inst(kit.boxGeo, kit.signMat, caps.signs, true),
+      caseA: inst(kit.caseGeo, kit.caseMats[0], caps.cases),
+      caseB: inst(kit.caseGeo, kit.caseMats[1], caps.cases),
+      caseC: inst(kit.caseGeo, kit.caseMats[2], caps.cases),
       poles: inst(kit.poleGeo, kit.poleMat, caps.lamps),
       heads: inst(kit.boxGeo, kit.lampMat, caps.lamps),
       trunks: inst(kit.poleGeo, kit.trunkMat, caps.trees),
